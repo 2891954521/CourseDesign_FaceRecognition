@@ -9,6 +9,28 @@ from PIL import Image, ImageTk
 from PIL import Image, ImageDraw, ImageFont
 
 
+width = 640
+heigh = 480
+
+scaleFactor = 1.2
+
+minNeighbors = 3
+
+minW = int(0.2 * width)
+minH = int(0.2 * heigh)
+
+module = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
+if os.path.exists(module):
+    faceCascade = cv2.CascadeClassifier(module)
+else:
+    print('模型文件不存在')
+    exit(0)
+
+font = cv2.FONT_HERSHEY_SIMPLEX
+
+cameraUrl = 0 # 'https://192.168.5.196:4343/video'
+
+
 def inputFace():
     camera = cv2.VideoCapture(cameraUrl)
     camera.set(3, width)
@@ -127,7 +149,7 @@ def generateModule():
     #     [os.remove(f) for f in images]
 
 
-def detection():
+def detection(loop,success,fail):
 
     recognizer = cv2.face.LBPHFaceRecognizer_create()
 
@@ -142,11 +164,9 @@ def detection():
     cam.set(3, width)
     cam.set(4, heigh)
 
-    loop = True
-
     lastId = 0
 
-    while loop:
+    while True:
         img = cam.read()[1]
 
         img = cv2.flip(img, 1)
@@ -170,9 +190,8 @@ def detection():
                 if lastId != id:
                     lastId = id
                 else:
-                    loop = False
-                    print(str(id) + "签到成功！")
-                    break
+                    success(str(id))
+                    return
             else:
                 id = "unknown"
                 confidence = "{0}%".format(round(100 - confidence))
@@ -182,12 +201,11 @@ def detection():
 
         image = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGBA))
 
-        image = ImageTk.PhotoImage(image)
-        lab.config(image = image)
-        lab.image = image
-        root.update()
+        loop(ImageTk.PhotoImage(image))
 
-        cv2.imshow('camera', img)
+        # lab.config(image = image)
+        # lab.image = image
+        # root.update()
 
         k = cv2.waitKey(10) & 0xff
         if k == 27:
@@ -195,7 +213,7 @@ def detection():
 
     cam.release()
 
-    cv2.destroyAllWindows()
+    fail()
 
 
 def deleteTrainer():
@@ -207,57 +225,29 @@ def deleteTrainer():
         print('模型文件不存在，请先训练模型')
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    width = 640
-    heigh = 480
 
-    scaleFactor = 1.2
+#     while True:
+#         print(
+#             '\n1.采集人脸\n'
+#             '2.生成模型\n'
+#             '3.实时检测\n'
+#             '4.清空已录入的人脸数据\n'
+#         )
 
-    minNeighbors = 3
+#         command = input('请输入命令:')
 
-    minW = int(0.2 * width)
-    minH = int(0.2 * heigh)
+#         if command == '1':
+#             inputFace()
+#         elif command == '2':
+#             generateModule()
 
-    module = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
-    if os.path.exists(module):
-        faceCascade = cv2.CascadeClassifier(module)
-    else:
-        print('模型文件不存在')
-        exit(0)
+#         elif command == '3':
 
-    engine = pyttsx3.init()
+#             root.after(1000,detection)
 
-    font = cv2.FONT_HERSHEY_SIMPLEX
+#             root.mainloop()
 
-    cameraUrl = 'https://192.168.5.196:4343/video'
-
-    root = tk.Tk()
-
-    lab = tk.Label(root)
-
-    lab.pack()
-
-    while True:
-        print(
-            '\n1.采集人脸\n'
-            '2.生成模型\n'
-            '3.实时检测\n'
-            '4.清空已录入的人脸数据\n'
-        )
-
-        command = input('请输入命令:')
-
-        if command == '1':
-            inputFace()
-        elif command == '2':
-            generateModule()
-
-        elif command == '3':
-
-            root.after(1000,detection)
-
-            root.mainloop()
-
-        elif command == '4':
-            deleteTrainer()
+#         elif command == '4':
+#             deleteTrainer()
