@@ -1,3 +1,5 @@
 .idea/
 FaceRecognition/face
 FaceRecognition/trainer.yml
+.vscode/
+test/
