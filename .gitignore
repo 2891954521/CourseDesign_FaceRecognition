@@ -1,5 +1,6 @@
 .idea/
-FaceRecognition/face
-FaceRecognition/trainer.yml
 .vscode/
 test/
+*/face/
+*/__pycache__/
+*/trainer.yml

@@ -6,15 +6,17 @@ from PIL import Image, ImageTk
 
 class FaceRecognition:
 
+    minNeighbors = 3
+
+    scaleFactor = 1.2
+
     width = 640
     heigh = 480
 
     minW = int(0.2 * width)
     minH = int(0.2 * heigh)
 
-    scaleFactor = 1.2
-
-    minNeighbors = 3
+    camera = None
 
     faceCascade =  None
 
@@ -22,9 +24,13 @@ class FaceRecognition:
 
     cameraUrl = 0 # 'https://192.168.5.196:4343/video'
 
-
     # 初始化
     def __init__(self):
+
+        self.camera = cv2.VideoCapture(self.cameraUrl)
+        self.camera.set(3, self.width)
+        self.camera.set(4, self.heigh)
+
         module = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
         if os.path.exists(module):
             self.faceCascade = cv2.CascadeClassifier(module)
@@ -34,9 +40,9 @@ class FaceRecognition:
 
 
     # 获取人脸
-    def __face__(self, camera):
+    def __face__(self):
 
-        image = cv2.flip(camera.read()[1], 1)
+        image = cv2.flip(self.camera.read()[1], 1)
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -63,19 +69,15 @@ class FaceRecognition:
         if not os.path.exists(path):
             os.makedirs(path)
 
-        camera = cv2.VideoCapture(self.cameraUrl)
-        camera.set(3, self.width)
-        camera.set(4, self.heigh)
-
         count = 30
 
         while count > 0:
-            img = camera.read()[1]
-            img = cv2.flip(img, 1)
+            
+            image = cv2.flip(self.camera.read()[1], 1)
 
-            cv2.putText(img, 'count down:' + str(count), (100, 100), self.font, 2, (0, 0, 0), 5)
+            cv2.putText(image, 'count down:' + str(count), (100, 100), self.font, 2, (0, 0, 0), 5)
 
-            image = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGBA))
+            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
             loop(ImageTk.PhotoImage(image))
 
             cv2.waitKey(20)
@@ -84,7 +86,7 @@ class FaceRecognition:
 
         while count < 10:
 
-            image, gray, faces= self.__face__(camera)
+            image, gray, faces= self.__face__()
 
             for (x, y, w, h) in faces:
                 cv2.imwrite(os.path.join(path, str(count) + ".jpg"), gray[y:y+h, x:x+w])
@@ -95,12 +97,10 @@ class FaceRecognition:
 
             cv2.putText(image, 'record:' + str(count), (100, 100), self.font, 2, (0, 0, 0), 5)
 
-            image = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGBA))
+            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
             loop(ImageTk.PhotoImage(image))
 
             cv2.waitKey(20)
-
-        camera.release()
     
         finish()
 
@@ -180,14 +180,10 @@ class FaceRecognition:
             stop('模型文件不存在，请先训练模型')
             return
 
-        camera = cv2.VideoCapture(self.cameraUrl)
-        camera.set(3, self.width)
-        camera.set(4, self.heigh)
-
         lastId = 0
 
         while True:
-            image, gray, faces = self.__face__(camera)
+            image, gray, faces = self.__face__()
 
             for(x, y, w, h) in faces:
                 cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -200,7 +196,6 @@ class FaceRecognition:
                         lastId = id
                     else:
                         success(str(id))
-                        camera.release()
                         return
                 else:
                     id = "unknown"
@@ -215,8 +210,6 @@ class FaceRecognition:
             k = cv2.waitKey(10) & 0xff
             if k == 27:
                 break
-
-        camera.release()
 
         stop('终止')
 
