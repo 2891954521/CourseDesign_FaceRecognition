@@ -2,40 +2,36 @@ import os
 import cv2
 import pyttsx3
 import numpy as np
-from PIL import Image
+
+import tkinter as tk
+from PIL import Image, ImageTk
+
+from PIL import Image, ImageDraw, ImageFont
+
 
 def inputFace():
-    camera = cv2.VideoCapture(0)
-    camera.set(3, 640)
-    camera.set(4, 480)
+    camera = cv2.VideoCapture(cameraUrl)
+    camera.set(3, width)
+    camera.set(4, heigh)
 
-    config = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
-    if os.path.exists(config):
-        face_detector = cv2.CascadeClassifier(config)
-    else:
-        print('模型文件不存在')
-        return
+    id = input('输入用户id:')
 
-    name = input('输入用户名称:')
+    count = 60
 
-    # engine.say("正在准备采集人脸，请直视摄像机")
-    # engine.runAndWait()
-
-    count = 0
-
-    while count < 60:
+    while count > 0:
         img = camera.read()[1]
         img = cv2.flip(img, 1)
+        cv2.putText(img, 'count down:' + str(count), (100, 100), font, 2, (0, 0, 0), 5)
         cv2.imshow('image', img)
-        cv2.waitKey(50)
-        count += 1
+        cv2.waitKey(20)
+        count -= 1
 
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'face')
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face')
+
+    path = os.path.join(path, id)
 
     if not os.path.exists(path):
         os.mkdir(path)
-
-    count = 0
 
     while count < 10:
         img = camera.read()[1]
@@ -43,126 +39,155 @@ def inputFace():
         
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        faces = face_detector.detectMultiScale(gray, 1.3, 5)
+        faces = faceCascade.detectMultiScale(
+            gray,
+            scaleFactor = scaleFactor,
+            minNeighbors = minNeighbors,
+            minSize = (int(minW), int(minH))
+        )
 
-        for (x,y,w,h) in faces:
-            cv2.rectangle(img, (x,y), (x+w,y+h), (255,0,0), 2)
-
-            cv2.imwrite(os.path.join(path,name + '.' + str(count) + ".jpg"), gray[y:y+h,x:x+w])
-
+        for (x, y, w, h) in faces:
+            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            cv2.imwrite(os.path.join(path, str(count) + ".jpg"), gray[y:y+h, x:x+w])
+            cv2.putText(img, 'save:' + str(count), (100, 100), font, 2, (0, 0, 0), 5)
             count += 1
-            
-            print(count)
-            
-        cv2.imshow('image', img)
+            break
 
-        cv2.waitKey(100)
-    # engine.say("采集完成！")
-    # engine.runAndWait()
+        cv2.imshow('image', img)
+        cv2.waitKey(20)
 
     camera.release()
 
     cv2.destroyAllWindows()
 
+
 def generateModule():
 
     recognizer = cv2.face.LBPHFaceRecognizer_create()
 
-    config = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
-    if os.path.exists(config):
-        detector = cv2.CascadeClassifier(config)
-    else:
-        print('模型文件不存在')
-        return
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face')
 
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'face')
-
-    images = [os.path.join(path,f) for f in os.listdir(path)]
+    fail = []
 
     face = []
-    name = []
-    for img in images:
-        s = int(os.path.split(img)[-1].split(".")[0])
-        img_numpy = np.array(Image.open(img).convert('L'),'uint8')
-        faces = detector.detectMultiScale(img_numpy)
-        for (x,y,w,h) in faces:
-            face.append(img_numpy[y:y+h,x:x+w])
-            name.append(s)
 
-    trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml')
-    if os.path.exists(trainer):
-        recognizer.read(trainer)
-        recognizer.update(face, np.array(name))
-    else:
-        recognizer.train(face, np.array(name))
+    ids = []
 
+    for id in os.listdir(path):
+
+        file = os.path.join(path, id)
+
+        count = 0
+
+        for image in os.listdir(file):
+
+            img_numpy = np.array(Image.open(os.path.join(file, image)).convert('L'), 'uint8')
+
+            dim = img_numpy.shape
+
+            faces = faceCascade.detectMultiScale(
+                img_numpy,
+                scaleFactor = scaleFactor - 0.1,
+                minNeighbors = minNeighbors,
+                minSize = (dim[1] // 2, dim[0] // 2)
+            )
+
+            if len(faces) != 0:
+                (x, y, w, h) = faces[0]
+                cv2.rectangle(img_numpy, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                cv2.imshow('image', img_numpy)
+                cv2.waitKey(0)
+                count += 1
+                face.append(img_numpy[y:y+h, x:x+w])
+                ids.append(int(id))
+
+        if count == 0:
+            fail.append(id)
+
+    recognizer.train(face, np.array(ids))
+
+    trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'trainer.yml')
     # recognizer.save() worked on Mac, but not on Pi
     recognizer.write(trainer)
 
-    [os.remove(f) for f in images]
+    cv2.destroyAllWindows()
+    # if os.path.exists(trainer):
+    #     recognizer.read(trainer)
+    #     recognizer.update(face, np.array(name))
+    # else:
+    #     recognizer.train(face, np.array(name))
+    print('训练完成')
+    if len(fail) > 0:
+        print('下列用户模型训练错误，请尝试重新录入人脸')
+        for id in fail:
+            print(id)
 
-    print("训练完成，添加了{}名用户，共计{}个有效数据".format(len(np.unique(name)),len(face)))
+    # yes = input('是否删除训练数据？(y/n)')
+    # if yes == '' or yes == 'y':
+    #     [os.remove(f) for f in images]
 
 
 def detection():
-    
+
     recognizer = cv2.face.LBPHFaceRecognizer_create()
 
-    trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml')
+    trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'trainer.yml')
     if os.path.exists(trainer):
         recognizer.read(trainer)
     else:
-        print('模型文件不存在')
+        print('模型文件不存在，请先训练模型')
         return
 
-    config = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
-    if os.path.exists(config):
-        faceCascade = cv2.CascadeClassifier(config)
-    else:
-        print('模型文件不存在')
-        return
+    cam = cv2.VideoCapture(cameraUrl)
+    cam.set(3, width)
+    cam.set(4, heigh)
 
-    font = cv2.FONT_HERSHEY_SIMPLEX
+    loop = True
 
-    id = 0
+    lastId = 0
 
-    cam = cv2.VideoCapture(0)
-    cam.set(3, 640)
-    cam.set(4, 480)
-
-    # 能被检测到的最小人脸
-    minW = 0.1 * cam.get(3)
-    minH = 0.1 * cam.get(4)
-
-    while True:
+    while loop:
         img = cam.read()[1]
 
         img = cv2.flip(img, 1)
 
-        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         faces = faceCascade.detectMultiScale(
             gray,
-            scaleFactor = 1.2,
-            minNeighbors = 5,
+            scaleFactor = scaleFactor,
+            minNeighbors = minNeighbors,
             minSize = (int(minW), int(minH)),
         )
 
-        for(x,y,w,h) in faces:
-            cv2.rectangle(img, (x,y), (x + w,y + h), (0,255,0), 2)
+        for(x, y, w, h) in faces:
+            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-            id, confidence = recognizer.predict(gray[y:y+h,x:x+w])
+            id, confidence = recognizer.predict(gray[y:y+h, x:x+w])
 
-            if (0 < confidence < 40):
-                confidence = "  {0}%".format(round(100 - confidence))
+            if 0 < confidence < 45:
+                confidence = "{0}%".format(round(100 - confidence))
+                if lastId != id:
+                    lastId = id
+                else:
+                    loop = False
+                    print(str(id) + "签到成功！")
+                    break
             else:
                 id = "unknown"
-                confidence = "  {0}%".format(round(100 - confidence))
+                confidence = "{0}%".format(round(100 - confidence))
 
-            cv2.putText(img, str(id), (x + 5,y - 5), font, 1, (255,255,255), 2)
-            cv2.putText(img, str(confidence), (x + 5,y + h - 5), font, 1, (255,255,0), 1)
+            cv2.putText(img, str(id), (x + 5, y - 5), font, 1, (255, 255, 255), 2)
+            cv2.putText(img, str(confidence), (x + 5, y + h - 5), font, 1, (255, 255, 0), 1)
 
-        cv2.imshow('camera',img)
+        image = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGBA))
+
+        image = ImageTk.PhotoImage(image)
+        lab.config(image = image)
+        lab.image = image
+        root.update()
+
+        cv2.imshow('camera', img)
 
         k = cv2.waitKey(10) & 0xff
         if k == 27:
@@ -172,15 +197,53 @@ def detection():
 
     cv2.destroyAllWindows()
 
+
+def deleteTrainer():
+    trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'trainer.yml')
+    if os.path.exists(trainer):
+        os.remove(trainer)
+        print('已删除！')
+    else:
+        print('模型文件不存在，请先训练模型')
+
+
 if __name__ == '__main__':
+
+    width = 640
+    heigh = 480
+
+    scaleFactor = 1.2
+
+    minNeighbors = 3
+
+    minW = int(0.2 * width)
+    minH = int(0.2 * heigh)
+
+    module = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
+    if os.path.exists(module):
+        faceCascade = cv2.CascadeClassifier(module)
+    else:
+        print('模型文件不存在')
+        exit(0)
 
     engine = pyttsx3.init()
 
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    cameraUrl = 'https://192.168.5.196:4343/video'
+
+    root = tk.Tk()
+
+    lab = tk.Label(root)
+
+    lab.pack()
+
     while True:
         print(
-            '1.采集人脸\n'
+            '\n1.采集人脸\n'
             '2.生成模型\n'
             '3.实时检测\n'
+            '4.清空已录入的人脸数据\n'
         )
 
         command = input('请输入命令:')
@@ -189,6 +252,12 @@ if __name__ == '__main__':
             inputFace()
         elif command == '2':
             generateModule()
+
         elif command == '3':
-            detection()
-    
+
+            root.after(1000,detection)
+
+            root.mainloop()
+
+        elif command == '4':
+            deleteTrainer()
