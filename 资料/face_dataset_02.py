@@ -1,23 +1,23 @@
-import numpy as np
-from PIL import Image
 import os
 import cv2
+import numpy as np
+from PIL import Image
 
-# Path for face image database
-path = r'E:\data'
+id = '2'
+
+path = r'G:\face\data' + id
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
-detector = cv2.CascadeClassifier("D:\ProgramData\Anaconda3\envs\paddle\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml");
+detector = cv2.CascadeClassifier("D:\ProgramData\Anaconda3\envs\paddle\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml")
 
 # function to get the images and label data
 def getImagesAndLabels(path):
     imagePaths = [os.path.join(path,f) for f in os.listdir(path)]
-    faceSamples=[]
+    faceSamples = []
     ids = []
     for imagePath in imagePaths:
-        PIL_img = Image.open(imagePath).convert('L') # convert it to grayscale
-        img_numpy = np.array(PIL_img,'uint8')
-        id = int(os.path.split(imagePath)[-1].split(".")[1])
+        id = int(os.path.split(imagePath)[-1].split(".")[0])
+        img_numpy = np.array(Image.open(imagePath).convert('L'),'uint8')
         faces = detector.detectMultiScale(img_numpy)
         for (x,y,w,h) in faces:
             faceSamples.append(img_numpy[y:y+h,x:x+w])
@@ -26,10 +26,15 @@ def getImagesAndLabels(path):
 
 print ("\n [INFO] Training faces. It will take a few seconds. Wait ...")
 faces,ids = getImagesAndLabels(path)
-recognizer.train(faces, np.array(ids))
+
+if os.path.exists(r'G:\face\trainer\trainer.yml'):
+    recognizer.read(r'G:\face\trainer\trainer.yml')
+    recognizer.update(faces, np.array(ids))
+else:
+    recognizer.train(faces, np.array(ids))
 
 # Save the model into trainer/trainer.yml
-recognizer.write(r'E:\trainer\trainer.yml') # recognizer.save() worked on Mac, but not on Pi
+recognizer.write(r'G:\face\trainer\trainer.yml') # recognizer.save() worked on Mac, but not on Pi
 
 # Print the numer of faces trained and end program
 print("\n [INFO] {0} faces trained. Exiting Program".format(len(np.unique(ids))))
