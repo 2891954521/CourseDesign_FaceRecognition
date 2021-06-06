@@ -10,12 +10,6 @@ class FaceRecognition:
 
     scaleFactor = 1.2
 
-    width = 640
-    heigh = 480
-
-    minW = int(0.2 * width)
-    minH = int(0.2 * heigh)
-
     camera = None
 
     faceCascade =  None
@@ -25,7 +19,13 @@ class FaceRecognition:
     cameraUrl = 0 # 'https://192.168.5.196:4343/video'
 
     # 初始化
-    def __init__(self):
+    def __init__(self,w=640,h=480):
+
+        self.width = w
+        self.heigh = h
+
+        self.minW = int(0.2 * self.width)
+        self.minH = int(0.2 * self.heigh)
 
         self.camera = cv2.VideoCapture(self.cameraUrl)
         self.camera.set(3, self.width)
@@ -35,9 +35,7 @@ class FaceRecognition:
         if os.path.exists(module):
             self.faceCascade = cv2.CascadeClassifier(module)
         else:
-            print('模型文件不存在')
-            exit(0)
-
+            raise Exception('模型文件不存在')
 
     # 获取人脸
     def __face__(self):
@@ -55,6 +53,15 @@ class FaceRecognition:
 
         return image, gray, faces
 
+
+    # 获取一张图片
+    def getImage(self):
+        image = cv2.flip(self.camera.read()[1], 1)
+
+        image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
+        
+        return ImageTk.PhotoImage(image)
+    
 
     # 录入人脸
     # id       str  <- 录入人的ID
@@ -75,7 +82,7 @@ class FaceRecognition:
             
             image = cv2.flip(self.camera.read()[1], 1)
 
-            cv2.putText(image, 'count down:' + str(count), (100, 100), self.font, 2, (0, 0, 0), 5)
+            cv2.putText(image, 'count down:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
 
             image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
             loop(ImageTk.PhotoImage(image))
@@ -95,7 +102,7 @@ class FaceRecognition:
                 count += 1
                 break
 
-            cv2.putText(image, 'record:' + str(count), (100, 100), self.font, 2, (0, 0, 0), 5)
+            cv2.putText(image, 'record:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
 
             image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
             loop(ImageTk.PhotoImage(image))

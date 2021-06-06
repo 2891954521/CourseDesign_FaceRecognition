@@ -12,9 +12,11 @@ def nop():
 
 
 def inputFace():
+    global flag
+    flag = False
     text.config(text='请面向摄像头开始采集人脸信息')
     playsound(sound2)
-    demo.inputFace(id.get(), update, inputFinish)
+    discerner.inputFace(id.get(), update, inputFinish)
 
 
 def inputFinish():
@@ -25,12 +27,14 @@ def inputFinish():
 
 
 def generate():
-    text.config(text=demo.generateModule())
+    text.config(text=discerner.generateModule())
     root.update()
 
 
 def detection():
-    demo.detection(update,success,nop)
+    global flag
+    flag = False
+    discerner.detection(update,success,nop)
 
 
 def success(id):
@@ -47,14 +51,22 @@ def update(image):
 
 
 def clear():
-    image_lab.config(image=None)
-    image_lab.image = None
+    # image_lab.config(image=None)
+    # image_lab.image = None
+    global flag
+    flag = True
+    root.after(20,loop)
+
+
+def loop():
+    if flag:
+        update(discerner.getImage())
+        root.after(20,loop)
 
 
 if __name__ == '__main__':
         
-
-    demo = FaceRecognition.FaceRecognition()
+    flag = True
 
     sound1 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check _success.mp3')
     sound2 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','start_enter.mp3')
@@ -93,5 +105,11 @@ if __name__ == '__main__':
 
     text.place(x=x, y=72, width=width-x, height=64)
 
+    try:
+        discerner = FaceRecognition.FaceRecognition()
+    except Exception as e:
+        text.config(text=e.__str__)
+    else:
+        root.after(20,loop)
 
     root.mainloop()
