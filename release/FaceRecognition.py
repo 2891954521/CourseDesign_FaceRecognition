@@ -1,4 +1,3 @@
-from CourseDesign_FaceRecognition.CourseDesign_FaceRecognition.release.main import update
 import os
 import cv2
 import numpy as np
@@ -126,7 +125,7 @@ class FaceRecognition:
 
             cv2.putText(image, 'record:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
 
-            update(image)
+            self.update(image)
 
             cv2.waitKey(20)
 
@@ -236,7 +235,7 @@ class FaceRecognition:
 
     # 主循环
     def loop(self):
-        if self.status == 1:
+        if self.status == 0:
             self.update(cv2.flip(self.camera.read()[1], 1))
             self.image.after(20,self.loop)
 
