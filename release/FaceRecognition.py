@@ -1,25 +1,43 @@
+from CourseDesign_FaceRecognition.CourseDesign_FaceRecognition.release.main import update
 import os
 import cv2
 import numpy as np
+
+import tkinter as tk
+
+from playsound import playsound
 
 from PIL import Image, ImageTk
 
 class FaceRecognition:
 
-    minNeighbors = 3
+    # 图片组件
+    image = None
 
-    scaleFactor = 1.2
+    # 当前状态 0为空闲
+    status = 0
 
+    # 相机
     camera = None
 
+    # 人脸检测
     faceCascade =  None
+
+    # 人脸分类
+    recognizer = None
+
+    # 最小临近
+    minNeighbors = 3
+    # 缩放尺寸
+    scaleFactor = 1.2
 
     font = cv2.FONT_HERSHEY_SIMPLEX
 
     cameraUrl = 0 # 'https://192.168.5.196:4343/video'
 
+
     # 初始化
-    def __init__(self,w=640,h=480):
+    def __init__(self,root,x=16,y=16,w=640,h=480):
 
         self.width = w
         self.heigh = h
@@ -37,6 +55,18 @@ class FaceRecognition:
         else:
             raise Exception('模型文件不存在')
 
+        self.recognizer = cv2.face.LBPHFaceRecognizer_create()
+
+        trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml')
+        if os.path.exists(trainer):
+            self.recognizer.read(trainer)
+
+        self.image = tk.Label(root,bg="black")
+
+        self.image.place(x=x, y=y, width=w, height=h)
+
+        self.image.after(1000,self.loop)
+
     # 获取人脸
     def __face__(self):
 
@@ -52,24 +82,17 @@ class FaceRecognition:
         )
 
         return image, gray, faces
-
-
-    # 获取一张图片
-    def getImage(self):
-        image = cv2.flip(self.camera.read()[1], 1)
-
-        image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
-        
-        return ImageTk.PhotoImage(image)
     
 
     # 录入人脸
     # id       str  <- 录入人的ID
-    # loop     img  -> 每捕获一帧调用一次，返还一个label图片
-    # finish   None -> 录入结束时调用
+    # finish   str -> 录入结束时调用，返还录入状态
     # return   None
 
-    def inputFace(self, id, loop, finish):
+    def inputFace(self, id, finish):
+        self.status = 1
+        # text.config(text='请面向摄像头开始采集人脸信息')
+        # playsound(sound2)
 
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face', id)
 
@@ -84,8 +107,7 @@ class FaceRecognition:
 
             cv2.putText(image, 'count down:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
 
-            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
-            loop(ImageTk.PhotoImage(image))
+            self.update(image)
 
             cv2.waitKey(20)
         
@@ -93,7 +115,7 @@ class FaceRecognition:
 
         while count < 10:
 
-            image, gray, faces= self.__face__()
+            image, gray, faces = self.__face__()
 
             for (x, y, w, h) in faces:
                 cv2.imwrite(os.path.join(path, str(count) + ".jpg"), gray[y:y+h, x:x+w])
@@ -104,88 +126,55 @@ class FaceRecognition:
 
             cv2.putText(image, 'record:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
 
-            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
-            loop(ImageTk.PhotoImage(image))
+            update(image)
 
             cv2.waitKey(20)
-    
-        finish()
-
-
-    # 训练人脸模型
-    # return   str -> 训练结果
-
-    def generateModule(self):
-
-        recognizer = cv2.face.LBPHFaceRecognizer_create()
-
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face')
-
-        fail = []
 
         face = []
 
-        ids = []
+        for image in os.listdir(path):
 
-        for id in os.listdir(path):
+            img_numpy = np.array(Image.open(os.path.join(path, image)).convert('L'), 'uint8')
 
-            file = os.path.join(path, id)
+            dim = img_numpy.shape
 
-            count = 0
+            faces = self.faceCascade.detectMultiScale(
+                img_numpy,
+                scaleFactor = self.scaleFactor - 0.1,
+                minNeighbors = self.minNeighbors,
+                minSize = (dim[1] // 2, dim[0] // 2)
+            )
 
-            for image in os.listdir(file):
+            if len(faces) != 0:
+                (x, y, w, h) = faces[0]
+                face.append(img_numpy[y:y+h, x:x+w]) 
 
-                img_numpy = np.array(Image.open(os.path.join(file, image)).convert('L'), 'uint8')
+        if len(face) != 0:
 
-                dim = img_numpy.shape
+            trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml')
 
-                faces = self.faceCascade.detectMultiScale(
-                    img_numpy,
-                    scaleFactor = self.scaleFactor - 0.1,
-                    minNeighbors = self.minNeighbors,
-                    minSize = (dim[1] // 2, dim[0] // 2)
-                )
+            if os.path.exists(trainer):
+                self.recognizer.update(face, np.array([id for i in range(len(face))]))
+            else:
+                self.recognizer.train(face, np.array([id for i in range(len(face))]))
 
-                if len(faces) != 0:
-                    (x, y, w, h) = faces[0]
-                    face.append(img_numpy[y:y+h, x:x+w])
-                    ids.append(int(id)) 
-                    count += 1
+            # recognizer.save() worked on Mac, but not on Pi
+            self.recognizer.write(trainer)
 
-            if count == 0:
-                fail.append(id)
+            self.clear()
 
-        recognizer.train(face, np.array(ids))
+            finish('录入成功！')
+        else:
+            self.clear()
 
-        trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'trainer.yml')
-        # recognizer.save() worked on Mac, but not on Pi
-        recognizer.write(trainer)
-
-        msg = '训练完成'
-
-        if len(fail) > 0:
-            msg += '\n下列用户模型训练错误，请尝试重新录入人脸\n'
-            for id in fail:
-                msg += id + '\n'
-        
-        return msg
+            finish('录入失败，请尝试重新录入！')
 
 
     # 实时检测人脸
-    # loop     img -> 每捕获一帧调用一次，返还一个label图片
     # success  str -> 检测到的人
     # return   None
 
-    def detection(self, loop, success, stop):
-
-        recognizer = cv2.face.LBPHFaceRecognizer_create()
-
-        trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'trainer.yml')
-        if os.path.exists(trainer):
-            recognizer.read(trainer)
-        else:
-            stop('模型文件不存在，请先训练模型')
-            return
+    def detection(self, success, stop=lambda: nop()):
 
         lastId = 0
 
@@ -195,24 +184,24 @@ class FaceRecognition:
             for(x, y, w, h) in faces:
                 cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-                id, confidence = recognizer.predict(gray[y:y+h, x:x+w])
+                uid, confidence = self.recognizer.predict(gray[y:y+h, x:x+w])
 
                 if 0 < confidence < 45:
                     confidence = "{}%".format(round(100 - confidence))
-                    if lastId != id:
-                        lastId = id
+                    if lastId != uid:
+                        lastId = uid
                     else:
-                        success(str(id))
+                        self.clear()
+                        success(str(uid))
                         return
                 else:
-                    id = "unknown"
+                    uid = "unknown"
                     confidence = "{}%".format(round(100 - confidence))
 
-                cv2.putText(image, str(id), (x + 5, y - 5), self.font, 1, (255, 255, 255), 2)
+                cv2.putText(image, str(uid), (x + 5, y - 5), self.font, 1, (255, 255, 255), 2)
                 cv2.putText(image, str(confidence), (x + 5, y + h - 5), self.font, 1, (255, 255, 0), 1)
 
-            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA))
-            loop(ImageTk.PhotoImage(image))
+            self.update(image)
 
             k = cv2.waitKey(10) & 0xff
             if k == 27:
@@ -222,7 +211,6 @@ class FaceRecognition:
 
 
     # 删除现有模型
-    
     def deleteTrainer(self):
         trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'trainer.yml')
         if os.path.exists(trainer):
@@ -230,3 +218,29 @@ class FaceRecognition:
             return '已删除！'
         else:
             return '模型文件不存在，请先训练模型'
+
+
+    # 刷新
+    def update(self,image):
+        image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)))
+        self.image.config(image=image)
+        self.image.image = image
+        self.image.update()
+
+
+    # 进入待机状态
+    def clear(self):
+        self.status = 0
+        self.image.after(20,self.loop)
+
+
+    # 主循环
+    def loop(self):
+        if self.status == 1:
+            self.update(cv2.flip(self.camera.read()[1], 1))
+            self.image.after(20,self.loop)
+
+
+    def nop(self):
+        pass
+
