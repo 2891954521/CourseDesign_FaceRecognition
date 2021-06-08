@@ -1,9 +1,6 @@
 import os
-
 import FaceRecognition
-
 import tkinter as tk
-
 from playsound import playsound
 
 
