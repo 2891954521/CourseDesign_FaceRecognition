@@ -1,366 +1,189 @@
 #所需库
-import tkinter as tk
-from tkinter import *
-from PIL import Image,ImageTk
-import  pickle
-import cv2
 import os
 import time
-from win32 import win32gui
+import tkinter as tk
+from tkinter import *
 from win32.win32api import GetSystemMetrics
 import FaceRecognition
 from playsound import playsound
-from tkinter import Label, Tk
-from cv2 import VideoCapture, waitKey, cvtColor, destroyAllWindows
-from cv2 import CAP_PROP_FRAME_WIDTH, CAP_PROP_FRAME_HEIGHT, COLOR_BGR2RGBA
-from PIL import Image, ImageTk
-'''预加载部分'''
 
-#获取真实的分辨率
-hdc = win32gui.GetDC(0)
+
+#预加载
+
+##获取真实的分辨率
 swidth = GetSystemMetrics (0)
 sheight = GetSystemMetrics (1)
 
-'''控件部分'''
+
+
+#考勤页面
 def create_check_page():
-    #初始化
-    check_page=tk.Tk() # 创建窗口
+    
+    check_page = tk.Toplevel() # 创建窗口
     check_page.title("考勤窗口") # 设置窗口名称 
     check_page.attributes("-fullscreen", True) # 设置登录窗口为全屏模式
-
-    check_page.update()
-
-
-    #函数/事件
 
     def success(id):
         text_notice.config(text = id + ' 签到成功！')
         playsound(sound_success)
         check_page.update()
 
-    def check():
-        discerner.detection(success)
+    def detect():
+        discerner.detect(success)
 
     def update_time():
-        text_time.config(text=time.strftime('%Y-%m-%d\n%H:%M:%S',time.localtime(time.time())))
+        text_time.config(text = time.strftime('%Y-%m-%d\n%H:%M:%S', time.localtime(time.time())))
         text_time.after(1000, update_time)  
     
-    #控件
-    sound_success = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check _success.mp3')
-    check_title=tk.Label(check_page,text='考勤系统',font=('', 20),fg="black")
-    image_lab = tk.Label(check_page,bg="black")#图像显示区域
-    text_notice = tk.Label(check_page,text='Welcome',font=('', 40),fg="black")
-    text_time = tk.Label(check_page,text='加载中',font=('', 70),fg="black")
-    button_check=tk.Button(check_page,text='检测',command=check)
+    sound_success = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sound', 'check _success.mp3')
+    tk.Label(check_page, text = '考勤系统', font = ('', 20), fg = "black").place(x = 16, y = 0, width = swidth, height = sheight/8)
+    tk.Button(check_page, text = '关闭', command = check_page.destroy).place(x = swidth-75, y = 0, width = 75)#退出按钮
+    tk.Label(check_page, bg = "pink").place(x = swidth/32, y = sheight/8, width = swidth*15/32, height = sheight*3/4)#图像显示区域
+    text_notice = tk.Label(check_page, text = 'Welcome', font = ('', 40), fg = "black")
+    text_notice.place(x = swidth*17/32, y = sheight/8, width = swidth*14/32, height = sheight/8)
+    text_time = tk.Label(check_page, text = '加载中', font = ('', 70), fg = "black")
+    text_time.place(x = swidth*17/32, y = sheight/4, width = swidth*14/32, height = sheight/2)
+    tk.Button(check_page, text = '检测', command = detect).place(x = swidth*17/32, y = sheight*3/4, width = swidth*14/32, height = sheight/8)
 
     #执行程序
-    check_title.place(x=16,y=0,width=swidth,height=sheight/8)
-    image_lab.place(x=swidth/32, y=sheight/8, width=swidth*15/32,height=sheight*3/4)
-    text_notice.place(x=swidth*17/32, y=sheight/8, width=swidth*14/32, height=sheight/8)
-    text_time.place(x=swidth*17/32, y=sheight/4, width=swidth*14/32, height=sheight/2)
-    button_check.place(x=swidth*17/32,y=sheight*3/4,width=swidth*14/32,height=sheight/8)
 
     try:
-        discerner = FaceRecognition.FaceRecognition(check_page,x=swidth/32, y=sheight/8, width=swidth*15/32,height=sheight*3/4)
+        discerner = FaceRecognition.FaceRecognition(check_page, x = swidth/32, y = sheight/8, w = swidth*15/32, h = sheight*3/4)
     except Exception as e:
-        text_notice.config(text=e.__str__)
+        text_time.config(text = e.__str__)
 
     update_time()
     check_page.mainloop()
 
-
-
-
-
+#管理页面
 def create_manage_page():
 
-#初始化
-    manage_page=tk.Tk() # 创建窗口
+    ##管理界面(直接显示)
+    manage_page = tk.Toplevel() # 创建窗口
     manage_page.title("管理窗口") # 设置窗口名称 
     manage_page.attributes("-fullscreen", True) # 设置登录窗口为全屏模式
-    
-#点击事件
 
-    #管理界面
     def logout():
         manage_page.destroy()
-
-    def show_manage_page():
-        button_lock.place(x=0,y=0,width=50)
-
-        button_logout.place(x=125,y=0,width=75)
-        button_edit.place(x=swidth*2/11,y=sheight*13/16)
-        button_view.place(x=swidth*4/11,y=sheight*13/16)
-        button_work.place(x=swidth*6/11,y=sheight*13/16)
-        button_log.place(x=swidth*8/11,y=sheight*13/16)
-        manage_page.mainloop()
-
-    def create_lock_page():
-        title_lock.place(x=0,y=0)
-        input_pwd_unlock.place(x=swidth/2, y=0)
-        button_unlock.place(x=swidth*3/4,y=0)
-
         lock_page.pack()
-
+    
+    def create_lock_page():
+        lock_page.pack()
+    
     def create_edit_page():
-        title_edit.place(x=0,y=0)
-        button_edit_back.place(x=125,y=0,width=75)
-        input_search_name.place(x=swidth/2, y=0)
-        button_search.place(x=swidth*3/4,y=0)
-
         edit_page.pack()
 
     def create_view_page():
-        text_view_title.place(x=0,y=0)
-        button_view_back.place(x=125,y=0,width=75)#back
-
         view_page.pack()
    
     def create_work_page():
-        title_work.place(x=0,y=0)
-        butten_work_back.place(x=125,y=0,width=75)
-
         work_page.pack()
 
     def create_log_page():
-        title_log.place(x=0,y=0)
-        button_log_back.place(x=125,y=0,width=75)
-
         log_page.pack()
 
-    #锁定界面
+    tk.Button(manage_page, text = '锁定', command = create_lock_page).place(x = 0, y = 0, width = 50)
+    tk.Button(manage_page, text = '退出登录', command = logout).place(x = swidth-75, y = 0, width = 75)
+    tk.Button(manage_page, text = '信息编辑', command = create_edit_page).place(x = swidth*2/11, y = sheight*13/16)
+    tk.Button(manage_page, text = '信息查询', command = create_view_page).place(x = swidth*4/11, y = sheight*13/16)
+    tk.Button(manage_page, text = '排班', command = create_work_page).place(x = swidth*6/11, y = sheight*13/16)
+    tk.Button(manage_page, text = '操作记录查询', command = create_log_page).place(x = swidth*8/11, y = sheight*13/16)
+
+
+    ##锁定界面
+    lock_page = Frame(manage_page, height = sheight, width = swidth)
+
     def unlock():
         lock_page.pack_forget()
 
-    #信息编辑界面
-    def edit_back():
-        edit_page.pack_forget()
+    input_pwd_unlock = StringVar()
+    tk.Label(lock_page, text = '输入密码以解锁', font = ('', 20), fg = "green").place(x = 0, y = 0)
+    tk.Entry(lock_page,textvariable=input_pwd_unlock).place(x = swidth/2, y = 0)#密码框
+    tk.Button(lock_page, text = '解锁', command = unlock).place(x = swidth*3/4, y = 0)#解锁按钮
+
+
+    ##信息编辑界面
+    edit_page = Frame(manage_page, height = sheight, width = swidth)
 
     def search():
-        tk.messagebox.showerror(message='搜索中！')
+        tk.messagebox.showerror(message = '搜索中！')   
 
-    #信息查看界面
-    def view_back():
-        view_page.pack_forget()
-
-    #排班界面
-    def work_back():
-        work_page.pack_forget()
-
-    #操作记录查看
-    def log_back():
-        log_page.pack_forget()
+    input_search_name = StringVar()
+    tk.Label(edit_page, text = '信息编辑', font = ('', 20), fg = "green").place(x = 0, y = 0)
+    tk.Button(edit_page, text = '返回', command = edit_page.pack_forget).place(x = 125, y = 0, width = 75)#返回
+    tk.Entry(edit_page,textvariable=input_search_name).place(x = swidth/2, y = 0)#搜索框
+    tk.Button(edit_page, text = '搜索', command = search).place(x = swidth*3/4, y = 0)#搜索按钮
 
 
-#控件设定
+    ##信息查看界面
+    view_page = Frame(manage_page, height = sheight, width = swidth)
 
-    #管理界面
-    button_lock=tk.Button(manage_page,text='锁定',command=create_lock_page)
-
-    button_logout=tk.Button(manage_page,text='退出登录',command=logout)
-    button_edit=tk.Button(manage_page,text='信息编辑',command=create_edit_page)
-    button_view=tk.Button(manage_page,text='信息查询',command=create_view_page)
-    button_work=tk.Button(manage_page,text='排班',command=create_work_page)
-    button_log=tk.Button(manage_page,text='操作记录查询',command=create_log_page)
-
-    #锁定界面
-    lock_page=Frame(manage_page,height=sheight,width=swidth)
-    title_lock=tk.Label(lock_page,text='输入密码以解锁',font=('',20),fg="green")
-    input_pwd_unlock=tk.Entry(lock_page)#密码框
-    button_unlock=tk.Button(lock_page,text='解锁',command=unlock)#解锁按钮
-
-    #信息编辑界面
-    edit_page=Frame(manage_page,height=sheight,width=swidth)
-    title_edit=tk.Label(edit_page,text='信息编辑',font=('',20),fg="green")
-    button_edit_back=tk.Button(edit_page,text='返回',command=edit_back)#返回
-    input_search_name=tk.Entry(edit_page)#搜索框
-    button_search=tk.Button(edit_page,text='搜索',command=search)#搜索按钮
-
-    #信息查看界面
-    view_page=Frame(manage_page,height=sheight,width=swidth)
-    text_view_title=tk.Label(view_page,text='信息查看',font=('',20),fg="green")
-    button_view_back=tk.Button(view_page,text='返回',command=view_back)
-
-    #排班界面
-    work_page=Frame(manage_page,height=sheight,width=swidth)
-    title_work=tk.Label(work_page,text='排班页',font=('',20),fg="green")
-    butten_work_back=tk.Button(work_page,text='返回',command=work_back)#返回
-
-    #操作记录查看
-    log_page=Frame(manage_page,height=sheight,width=swidth)
-    title_log=tk.Label(log_page,text='操作记录查看',font=('',20),fg="green")
-    button_log_back=tk.Button(log_page,text='返回',command=log_back)#返回
+    tk.Label(view_page, text = '信息查看', font = ('', 20), fg = "green").place(x = 0, y = 0)
+    tk.Button(view_page, text = '返回', command = view_page.pack_forget).place(x = 125, y = 0, width = 75)#back
 
 
-#执行程序
-    show_manage_page()
+    ##排班界面
+    work_page = Frame(manage_page, height = sheight, width = swidth)
+
+    tk.Label(work_page, text = '排班页', font = ('', 20), fg = "green").place(x = 0, y = 0)
+    tk.Button(work_page, text = '返回', command = work_page.pack_forget).place(x = 125, y = 0, width = 75)#返回
+    
+    ##操作记录查看
+    log_page = Frame(manage_page, height = sheight, width = swidth)
+
+    tk.Label(log_page, text = '操作记录查看', font = ('', 20), fg = "green").place(x = 0, y = 0)
+    tk.Button(log_page, text = '返回', command = log_page.pack_forget).place(x = 125, y = 0, width = 75)#返回
 
 
-
-
+    #执行程序
+    manage_page.mainloop()
 
 #登陆/注册窗口
 def create_login_page():
 
-#初始化
-    login_page=tk.Tk() # 创建窗口
+        #登录界面(直接显示)
+    login_page = tk.Tk() # 创建窗口
     login_page.title("登陆/注册/管理窗口") # 设置窗口名称
     login_page.attributes("-fullscreen", True) # 设置登录窗口为全屏模式
-
-#点击事件
-
-    #登录界面
-    def show_login_page():
-        button_check.place(x=50,y=0,width=75)
-        butten_exit.place(x=swidth-75,y=0,width=75)#显示退出按钮
-        text_title1.place(x=swidth/8,y=sheight*9/20)#显示"考勤管理系统"
-        text_name.place(x=swidth*9/16,y=sheight*4/10)#显示"账户"
-        input_name.place(x=swidth*10/16, y=sheight*4/10,width=swidth/5)#显示"账户输入框"
-        text_pwd.place(x=swidth*9/16,y=sheight*5/10)#显示"密码"
-        input_pwd.place(x=swidth*10/16,y=sheight*5/10,width=swidth/5)#显示密码输入框
-        butten_signup.place(x=swidth*13/20,y=sheight*3/5)#显示注册按钮
-        butten_manage.place(x=swidth*3/4,y=sheight*3/5)#显示登录按钮
-        login_page.mainloop()
-
-    def close():
-        login_page.destroy()
     
     def create_signup_page():
-        button_back_signup.place(x=0,y=0,width=75)#返回按钮
-        button_quit_signup.place(x=swidth-75,y=0,width=75)#关闭按钮
-        text_title.place(x=swidth/8,y=sheight*8/20)#考勤管理系统管理员账户注册
-        text_name2.place(x=swidth*8/16,y=sheight*30/100)
-        text_pwd21.place(x=swidth*8/16,y=sheight*40/100)
-        text_pwd22.place(x=swidth*8/16,y=sheight*50/100)
-        text_invitation_code.place(x=swidth*8/16,y=sheight*60/100)
-        new_name.place(x=swidth*10/16, y=sheight*30/100,width=swidth/5)#显示账户输入框
-        new_pwd.place(x=swidth*10/16, y=sheight*40/100,width=swidth/5)#显示密码输入框
-        new_pwd2.place(x=swidth*10/16, y=sheight*50/100,width=swidth/5)#显示确认密码输入框
-        invitation_code.place(x=swidth*10/16, y=sheight*60/100,width=swidth/5)#显示邀请码输入框
-        button_signup.place(x=swidth*22/32,y=sheight*70/100)#注册
         signup_page.pack()
-
-    #注册界面
-    def back():
-        signup_page.pack_forget()
-
-#控件设定
-
-    #登录界面
-    button_check=tk.Button(login_page,text='考勤模式',command=create_check_page)
-    text_title1=tk.Label(login_page,text='考勤管理系统',font=('',54),fg="black")#"考勤管理系统"
-    text_name=tk.Label(login_page,text='账户：',font=('',20),fg="green")#"账户"
-    input_name=tk.Entry(login_page)#"账户输入框"
-    text_pwd=tk.Label(login_page,text='密码：',font=('',20),fg="green")#"密码"
-    input_pwd=tk.Entry(login_page, show='*')#密码输入框
-    butten_exit=tk.Button(login_page,text='关闭',command=close)#退出按钮
-    butten_signup=tk.Button(login_page,text='注册',command=create_signup_page)#注册按钮
-    butten_manage=tk.Button(login_page,text='登录',command=create_manage_page)#登录按钮
-
-    #注册界面
-    signup_page=Frame(login_page,height=sheight,width=swidth)
-    button_back_signup=tk.Button(signup_page,text='返回',command=back)
-    button_quit_signup=tk.Button(signup_page,text='关闭',command=close)
-    text_title=tk.Label(signup_page,text='考勤管理系统\n管理员账户注册',font=('',54),fg="black")
-    text_name2=tk.Label(signup_page,text='账户：',font=('',20),fg="green")
-    text_pwd21=tk.Label(signup_page,text='密码：',font=('',20),fg="green")
-    text_pwd22=tk.Label(signup_page,text='确认密码：',font=('',20),fg="green")
-    text_invitation_code=tk.Label(signup_page,text='邀请码：',font=('',20),fg="green")
-    button_signup=tk.Button(signup_page,text='注册',command=create_signup_page)
-    new_name = tk.Entry(signup_page)#账户输入框
-    new_pwd = tk.Entry(signup_page)#密码输入框
-    new_pwd2 = tk.Entry(signup_page)#确认密码输入框
-    invitation_code = tk.Entry(signup_page)#邀请码输入框
-
-#执行程序
-    show_login_page()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-create_login_page()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def login_page():
-#     def ss():
-#         butten_manage.place(x=swidth*3/4,y=sheight*3/5)#显示登录按钮
-
-#     def aa():
-#         text_check.place_forget()
-#     login_page=tk.Tk() # 创建登录窗口
-#     login_page.title("登录窗口") # 设置窗口名称
-#     login_page.attributes("-fullscreen", True) # 设置登录窗口为全屏模式
-
-    # text_title1=tk.Label(login_page,text='考勤管理系统',font=('',54),fg="black")#"考勤管理系统"
-    # text_name=tk.Label(login_page,text='账户：',font=('',20),fg="green")#"账户"
-    # input_name=tk.Entry(login_page)#"账户输入框"
-    # text_pwd=tk.Label(login_page,text='密码：',font=('',20),fg="green")#"密码"
-    # input_pwd=tk.Entry(login_page, show='*')#密码输入框
-    # butten_exit=tk.Button(login_page,text='退出',command=aa)#退出按钮
-    # butten_signup=tk.Button(login_page,text='注册',command=ss)#注册按钮
-    # butten_manage=tk.Button(login_page,text='登录',command=manage_page)#登录按钮
     
-    # butten_exit.place(x=125,y=0,width=75)#显示退出按钮
-    # text_title1.place(x=swidth/8,y=sheight*9/20)#显示"考勤管理系统"
-    # text_name.place(x=swidth*9/16,y=sheight*4/10)#显示"账户"
-    # input_name.place(x=swidth*10/16, y=sheight*4/10,width=swidth/5)#显示"账户输入框"
-    # text_pwd.place(x=swidth*9/16,y=sheight*5/10)#显示"密码"
-    # input_pwd.place(x=swidth*10/16,y=sheight*5/10,width=swidth/5)#显示密码输入框
-    # butten_signup.place(x=swidth*13/20,y=sheight*3/5)#显示注册按钮
-    # butten_manage.place(x=swidth*3/4,y=sheight*3/5)#显示登录按钮
-#     login_page.mainloop()
+    input_name = StringVar()
+    text_pwd = StringVar() 
+    tk.Button(login_page, text = '考勤模式', command = create_check_page).place(x = 0, y = 0, width = 75)
+    tk.Label(login_page, text = '考勤管理系统', font = ('', 54), fg = "black").place(x = swidth/8, y = sheight*9/20)#"考勤管理系统"
+    tk.Label(login_page, text = '账户：', font = ('', 20), fg = "green").place(x = swidth*9/16, y = sheight*4/10)#"账户"
+    tk.Entry(login_page, textvariable = input_name).place(x = swidth*10/16, y = sheight*4/10, width = swidth/5)#"账户输入框"
+    tk.Label(login_page, text = '密码：', font = ('', 20), fg = "green").place(x = swidth*9/16, y = sheight*5/10)#"密码"
+    tk.Entry(login_page, textvariable = text_pwd , show = '*').place(x = swidth*10/16, y = sheight*5/10, width = swidth/5)#密码输入框
+    tk.Button(login_page, text = '关闭', command = login_page.destroy).place(x = swidth-75, y = 0, width = 75)#关闭按钮
+    tk.Button(login_page, text = '注册', command = create_signup_page).place(x = swidth*13/20, y = sheight*3/5)#注册按钮
+    tk.Button(login_page, text = '登录', command = create_manage_page).place(x = swidth*3/4, y = sheight*3/5)#登录按钮
+
+        #注册界面(点击后显示)
+    signup_page = Frame(login_page, height = sheight, width = swidth)
+
+    new_name = tk.StringVar()
+    new_pwd = tk.StringVar()
+    new_pwd2 = tk.StringVar()
+    invitation_code = tk.StringVar()
+    tk.Button(signup_page, text = '返回', command = signup_page.pack_forget).place(x = 0, y = 0, width = 75)#返回按钮
+    tk.Button(signup_page, text = '关闭', command = login_page.destroy).place(x = swidth-75, y = 0, width = 75)#关闭按钮
+    tk.Label(signup_page, text = '考勤管理系统\n管理员账户注册', font = ('', 54), fg = "black").place(x = swidth/8, y = sheight*8/20)#考勤管理系统管理员账户注册
+    tk.Label(signup_page, text = '账户：', font = ('', 20), fg = "green").place(x = swidth*8/16, y = sheight*30/100)
+    tk.Label(signup_page, text = '密码：', font = ('', 20), fg = "green").place(x = swidth*8/16, y = sheight*40/100)
+    tk.Label(signup_page, text = '确认密码：', font = ('', 20), fg = "green").place(x = swidth*8/16, y = sheight*50/100)
+    tk.Label(signup_page, text = '邀请码：', font = ('', 20), fg = "green").place(x = swidth*8/16, y = sheight*60/100)
+    tk.Entry(signup_page, textvariable = new_name).place(x = swidth*10/16, y = sheight*30/100, width = swidth/5)#账户输入框
+    tk.Entry(signup_page, textvariable = new_pwd).place(x = swidth*10/16, y = sheight*40/100, width = swidth/5)#密码输入框
+    tk.Entry(signup_page, textvariable = new_pwd2).place(x = swidth*10/16, y = sheight*50/100, width = swidth/5)#确认密码输入框
+    tk.Entry(signup_page, textvariable = invitation_code).place(x = swidth*10/16, y = sheight*60/100, width = swidth/5)#邀请码输入框
+    tk.Button(signup_page, text = '注册', command = create_signup_page).place(x = swidth*22/32, y = sheight*70/100)#注册
+
+    #执行程序
+    login_page.mainloop()
 
 
-# login_page()
-
-#     # global butten_exit
-#     # global text_check
-#     # global text_name
-#     # global input_name
-#     # global text_pwd
-#     # global input_pwd
-#     # global butten_signup
-#     # global butten_manage
-#     # global login_page
+#主程序
+create_login_page()
