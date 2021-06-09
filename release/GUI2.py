@@ -10,7 +10,10 @@ from win32 import win32gui
 from win32.win32api import GetSystemMetrics
 import FaceRecognition
 from playsound import playsound
-
+from tkinter import Label, Tk
+from cv2 import VideoCapture, waitKey, cvtColor, destroyAllWindows
+from cv2 import CAP_PROP_FRAME_WIDTH, CAP_PROP_FRAME_HEIGHT, COLOR_BGR2RGBA
+from PIL import Image, ImageTk
 '''预加载部分'''
 
 #获取真实的分辨率
@@ -25,8 +28,45 @@ def create_check_page():
     check_page.title("考勤窗口") # 设置窗口名称 
     check_page.attributes("-fullscreen", True) # 设置登录窗口为全屏模式
 
-    sound_success = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check _success.mp3')
+    check_page.update()
 
+
+    #函数/事件
+
+    def success(id):
+        text_notice.config(text = id + ' 签到成功！')
+        playsound(sound_success)
+        check_page.update()
+
+    def check():
+        discerner.detection(success)
+
+    def update_time():
+        text_time.config(text=time.strftime('%Y-%m-%d\n%H:%M:%S',time.localtime(time.time())))
+        text_time.after(1000, update_time)  
+    
+    #控件
+    sound_success = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check _success.mp3')
+    check_title=tk.Label(check_page,text='考勤系统',font=('', 20),fg="black")
+    image_lab = tk.Label(check_page,bg="black")#图像显示区域
+    text_notice = tk.Label(check_page,text='Welcome',font=('', 40),fg="black")
+    text_time = tk.Label(check_page,text='加载中',font=('', 70),fg="black")
+    button_check=tk.Button(check_page,text='检测',command=check)
+
+    #执行程序
+    check_title.place(x=16,y=0,width=swidth,height=sheight/8)
+    image_lab.place(x=swidth/32, y=sheight/8, width=swidth*15/32,height=sheight*3/4)
+    text_notice.place(x=swidth*17/32, y=sheight/8, width=swidth*14/32, height=sheight/8)
+    text_time.place(x=swidth*17/32, y=sheight/4, width=swidth*14/32, height=sheight/2)
+    button_check.place(x=swidth*17/32,y=sheight*3/4,width=swidth*14/32,height=sheight/8)
+
+    try:
+        discerner = FaceRecognition.FaceRecognition(check_page,x=swidth/32, y=sheight/8, width=swidth*15/32,height=sheight*3/4)
+    except Exception as e:
+        text_notice.config(text=e.__str__)
+
+    update_time()
+    check_page.mainloop()
 
 
 
