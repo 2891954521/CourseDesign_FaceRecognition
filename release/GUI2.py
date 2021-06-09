@@ -37,7 +37,7 @@ def create_check_page():
     
     sound_success = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sound', 'check _success.mp3')
     tk.Label(check_page, text = '考勤系统', font = ('', 20), fg = "black").place(x = 16, y = 0, width = swidth, height = sheight/8)
-    tk.Button(check_page, text = '关闭', command = check_page.destroy).place(x = swidth-75, y = 0, width = 75)#退出按钮
+    tk.Button(check_page, text = '关闭', command = check_page.destroy).place(x = swidth-75, y = 0, width = 75)#关闭按钮
     tk.Label(check_page, bg = "pink").place(x = swidth/32, y = sheight/8, width = swidth*15/32, height = sheight*3/4)#图像显示区域
     text_notice = tk.Label(check_page, text = 'Welcome', font = ('', 40), fg = "black")
     text_notice.place(x = swidth*17/32, y = sheight/8, width = swidth*14/32, height = sheight/8)
@@ -109,30 +109,38 @@ def create_manage_page():
         tk.messagebox.showerror(message = '搜索中！')   
 
     input_search_name = StringVar()
-    tk.Label(edit_page, text = '信息编辑', font = ('', 20), fg = "green").place(x = 0, y = 0)
-    tk.Button(edit_page, text = '返回', command = edit_page.pack_forget).place(x = 125, y = 0, width = 75)#返回
-    tk.Entry(edit_page,textvariable=input_search_name).place(x = swidth/2, y = 0)#搜索框
-    tk.Button(edit_page, text = '搜索', command = search).place(x = swidth*3/4, y = 0)#搜索按钮
-
+    avatar=NONE
+    tk.Label(edit_page, text = '信息编辑', font = ('', 20), fg = "black").place(x = 0, y = 0, width = swidth, height = sheight*3/48)
+    tk.Button(edit_page, text = '返回', command = edit_page.pack_forget).place(x = swidth-75, y = 0, width = 75)#返回
+    tk.Entry(edit_page,textvariable=input_search_name).place(x = swidth/30, y = sheight*3/48, width = swidth*8/30, height = sheight*3/48)#搜索框
+    tk.Button(edit_page, text = '搜索', command = search).place(x = swidth*9/30, y = sheight*3/48, width = swidth*2.5/30, height = sheight*3/48)#搜索按钮
+    img_avatar=tk.Label(edit_page, bg='pink')
+    img_avatar.place(x=swidth*1/30, y=sheight*7/48, width = swidth*10.5/30, height = sheight*26/48)  #用来存放图像
+    tk.Label(edit_page, text = '姓名', font = ('', 20), fg = "black").place(x=swidth*1.5/30, y=sheight*34/48, width = swidth*10/30, height = sheight*6/48)
+    tk.Label(edit_page, text = '学号', font = ('', 20), fg = "black").place(x=swidth*1.5/30, y=sheight*40/48, width = swidth*10/30, height = sheight*6/48)
+    tk.Label(edit_page, text = '   姓名   |     学号     |     学院     |      联系方式      ', font = ('', 20), bg='yellow', fg = "black").place(x=swidth*2/5, y = sheight*3/48, width = swidth*17/30, height = sheight*3/48)
+    #更新图像用
+        # avatar=NONE
+        # img_avatar.config(image=avatar)
 
     ##信息查看界面
     view_page = Frame(manage_page, height = sheight, width = swidth)
 
-    tk.Label(view_page, text = '信息查看', font = ('', 20), fg = "green").place(x = 0, y = 0)
-    tk.Button(view_page, text = '返回', command = view_page.pack_forget).place(x = 125, y = 0, width = 75)#back
+    tk.Label(view_page, text = '信息查看', font = ('', 20), fg = "black").place(x = 16, y = 0, width = swidth, height = sheight/16)
+    tk.Button(view_page, text = '返回', command = view_page.pack_forget).place(x = swidth-75, y = 0, width = 75)#返回
 
 
     ##排班界面
     work_page = Frame(manage_page, height = sheight, width = swidth)
 
-    tk.Label(work_page, text = '排班页', font = ('', 20), fg = "green").place(x = 0, y = 0)
-    tk.Button(work_page, text = '返回', command = work_page.pack_forget).place(x = 125, y = 0, width = 75)#返回
+    tk.Label(work_page, text = '排班页', font = ('', 20), fg = "black").place(x = 16, y = 0, width = swidth, height = sheight/16)
+    tk.Button(work_page, text = '返回', command = work_page.pack_forget).place(x = swidth-75, y = 0, width = 75)#返回
     
     ##操作记录查看
     log_page = Frame(manage_page, height = sheight, width = swidth)
 
-    tk.Label(log_page, text = '操作记录查看', font = ('', 20), fg = "green").place(x = 0, y = 0)
-    tk.Button(log_page, text = '返回', command = log_page.pack_forget).place(x = 125, y = 0, width = 75)#返回
+    tk.Label(log_page, text = '操作记录查看', font = ('', 20), fg = "black").place(x = 16, y = 0, width = swidth, height = sheight/16)
+    tk.Button(log_page, text = '返回', command = log_page.pack_forget).place(x = swidth-75, y = 0, width = 75)#返回
 
 
     #执行程序
