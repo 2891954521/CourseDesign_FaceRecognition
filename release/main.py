@@ -21,7 +21,7 @@ def inputFinish(text):
 
 
 def detection():
-    discerner.detection(success,nop)
+    discerner.detection(success)
 
 
 def success(id):
@@ -58,20 +58,15 @@ if __name__ == '__main__':
 
     tk.Button(root,text='录入',command=inputFace).place(x=x+wx+16,y=150,width=width-x-wx-30,height=50)
 
-    tk.Button(root,text='训练',command=nop).place(x=x,y=210,width=width-x-16,height=50)
-    tk.Button(root,text='检测',command=detection).place(x=x,y=270,width=width-x-16,height=50)
-
-    image_lab = tk.Label(root,bg="black")
-
-    image_lab.place(x=16, y=72, width=x-32, height=int((x-32)/1.3))
+    tk.Button(root,text='检测',command=detection).place(x=x,y=210,width=width-x-16,height=50)
 
     text = tk.Label(root,text='Welcome',font=('Arial', 15),fg="black")
 
     text.place(x=x, y=72, width=width-x, height=64)
 
     try:
-        discerner = FaceRecognition.FaceRecognition(root)
+        discerner = FaceRecognition.FaceRecognition(root,x=16, y=72, w=x-32, h=int((x-32)/1.3))
     except Exception as e:
-        text.config(text=e.__str__)
+        text.config(text=e)
 
     root.mainloop()
