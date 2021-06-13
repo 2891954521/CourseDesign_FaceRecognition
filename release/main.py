@@ -1,5 +1,5 @@
 import os
-import FaceRecognition
+import FaceRecognitionPi
 import tkinter as tk
 from playsound import playsound
 
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     text.place(x=x, y=72, width=width-x, height=64)
 
     try:
-        discerner = FaceRecognition.FaceRecognition(root,x=16, y=72, w=x-32, h=int((x-32)/1.3))
+        discerner = FaceRecognitionPi.FaceRecognition(root,x=16, y=72, w=x-32, h=int((x-32)/1.3))
     except Exception as e:
         text.config(text=e)
 
