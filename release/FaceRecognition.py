@@ -151,9 +151,9 @@ class FaceRecognition:
             trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml')
 
             if os.path.exists(trainer):
-                self.recognizer.update(face, np.array([id for i in range(len(face))]))
+                self.recognizer.update(face, np.array([int(id)] * len(face)))
             else:
-                self.recognizer.train(face, np.array([id for i in range(len(face))]))
+                self.recognizer.train(face, np.array([int(id)] * len(face)))
 
             # recognizer.save() worked on Mac, but not on Pi
             self.recognizer.write(trainer)
