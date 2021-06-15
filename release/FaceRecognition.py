@@ -4,8 +4,6 @@ import numpy as np
 
 import tkinter as tk
 
-from playsound import playsound
-
 from PIL import Image, ImageTk
 
 class FaceRecognition:
@@ -174,6 +172,8 @@ class FaceRecognition:
     # return   None
 
     def detection(self, success, stop=lambda: nop()):
+        
+        self.status = 1
 
         lastId = 0
 
@@ -220,24 +220,24 @@ class FaceRecognition:
 
 
     # 刷新
-    def update(self,image):
-        image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)))
-        self.image.config(image=image)
-        self.image.image = image
+    def update(self,img):
+        img = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)))
+        self.image.config(image=img)
+        self.image.image = img
         self.image.update()
 
 
     # 进入待机状态
     def clear(self):
         self.status = 0
-        self.image.after(20,self.loop)
+        self.image.after(1000,self.loop)
 
 
     # 主循环
     def loop(self):
         if self.status == 0:
             self.update(cv2.flip(self.camera.read()[1], 1))
-            self.image.after(20,self.loop)
+            self.image.after(50,self.loop)
 
 
     def nop(self):

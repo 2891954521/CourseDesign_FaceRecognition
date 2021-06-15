@@ -1,8 +1,5 @@
 import os
 import cv2
-import picamera
-import picamera.array
-
 import numpy as np
 
 import tkinter as tk
@@ -20,9 +17,6 @@ class FaceRecognition:
     # 相机
     camera = None
 
-    # 视频数据流
-    stream = None
-
     # 人脸检测
     faceCascade =  None
 
@@ -36,7 +30,6 @@ class FaceRecognition:
 
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-
     # 初始化
     def __init__(self,root,x=16,y=16,w=640,h=480):
 
@@ -46,13 +39,9 @@ class FaceRecognition:
         self.minW = int(0.2 * self.width)
         self.minH = int(0.2 * self.heigh)
 
-        self.camera = picamera.PiCamera()
-
-        self.camera.start_preview()
-
-        stream = picamera.array.PiRGBArray(self.camera)
-
-        self.camera.capture(stream, format='bgr')
+        self.camera = cv2.VideoCapture(0)
+        self.camera.set(3, 480)
+        self.camera.set(4, 320)
 
         module = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
         if os.path.exists(module):
@@ -70,12 +59,13 @@ class FaceRecognition:
 
         self.image.place(x=x, y=y, width=w, height=h)
 
-        self.image.after(1000,self.loop)
+        self.image.after(1000,self.__loop__)
+
 
     # 获取人脸
     def __face__(self):
 
-        image = self.stream.array
+        image = cv2.flip(self.camera.read()[1], 1)
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -89,15 +79,20 @@ class FaceRecognition:
         return image, gray, faces
     
 
+    # 主循环
+    def __loop__(self):
+        if self.status == 0:
+            self.update(cv2.flip(self.camera.read()[1], 1))
+            self.image.after(50,self.__loop__)
+
+
     # 录入人脸
     # id       str  <- 录入人的ID
     # finish   str -> 录入结束时调用，返还录入状态
     # return   None
-
     def inputFace(self, id, finish):
+
         self.status = 1
-        # text.config(text='请面向摄像头开始采集人脸信息')
-        # playsound(sound2)
 
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face', id)
 
@@ -108,7 +103,7 @@ class FaceRecognition:
 
         while count > 0:
             
-            image = self.stream.array
+            image = cv2.flip(self.camera.read()[1], 1)
 
             cv2.putText(image, 'count down:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
 
@@ -128,8 +123,6 @@ class FaceRecognition:
                 cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 count += 1
                 break
-
-            cv2.putText(image, 'record:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
 
             self.update(image)
 
@@ -178,8 +171,9 @@ class FaceRecognition:
     # 实时检测人脸
     # success  str -> 检测到的人
     # return   None
-
-    def detection(self, success, stop=lambda: nop()):
+    def detection(self, success, stop=lambda:()):
+        
+        self.status = 1
 
         lastId = 0
 
@@ -208,7 +202,7 @@ class FaceRecognition:
 
             self.update(image)
 
-            k = cv2.waitKey(10) & 0xff
+            k = cv2.waitKey(20) & 0xff
             if k == 27:
                 break
 
@@ -236,16 +230,5 @@ class FaceRecognition:
     # 进入待机状态
     def clear(self):
         self.status = 0
-        self.image.after(20,self.loop)
-
-
-    # 主循环
-    def loop(self):
-        if self.status == 0:
-            self.update(self.stream.array)
-            self.image.after(20,self.loop)
-
-
-    def nop(self):
-        pass
+        self.image.after(1000,self.__loop__)
 

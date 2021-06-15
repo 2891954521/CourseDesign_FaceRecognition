@@ -1,37 +1,37 @@
 import os
 
-import FaceRecognition
+import FaceRecognitionPi
 import tkinter as tk
-from playsound import playsound
+# from playsound import playsound
 
 
 def inputFace():
     text.config(text='请面向摄像头开始采集人脸信息')
-    playsound(sound2)
-    discerner.inputFace(id.get(), inputFinish)
+    # playsound(sound2)
+    FaceRecognitionPi.inputFace(id.get(), inputFinish)
 
 
 def inputFinish(text):
     text.config(text=text)
-    playsound(sound3)
+    # playsound(sound3)
     root.update()
 
 
 def detection():
-    discerner.detection(success)
+    FaceRecognitionPi.detection(success)
 
 
 def success(id):
     text.config(text = id + ' 签到成功！')
-    playsound(sound1)
+    # playsound(sound1)
     root.update()
 
 
 if __name__ == '__main__':
 
-    sound1 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check _success.mp3')
-    sound2 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','start_enter.mp3')
-    sound3 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','enter_success.mp3')
+    # sound1 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check _success.mp3')
+    # sound2 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','start_enter.mp3')
+    # sound3 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','enter_success.mp3')
 
     root = tk.Tk()
 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     text.place(x=x, y=72, width=width-x, height=64)
 
     try:
-        discerner = FaceRecognition.FaceRecognition(root,x=16, y=72, w=x-32, h=int((x-32)/1.3))
+        FaceRecognitionPi.init(root,x=16, y=72, w=x-32, h=int((x-32)/1.3))
     except Exception as e:
         text.config(text=e)
 
