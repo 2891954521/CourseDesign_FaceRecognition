@@ -28,10 +28,9 @@ class FaceRecognition:
     # 缩放尺寸
     scaleFactor = 1.2
 
+    fps = 30
+
     font = cv2.FONT_HERSHEY_SIMPLEX
-
-    cameraUrl = 0 # 'https://192.168.5.196:4343/video'
-
 
     # 初始化
     def __init__(self,root,x=16,y=16,w=640,h=480):
@@ -42,10 +41,11 @@ class FaceRecognition:
         self.minW = int(0.2 * self.width)
         self.minH = int(0.2 * self.heigh)
 
-        self.camera = cv2.VideoCapture(self.cameraUrl)
+        self.camera = cv2.VideoCapture(0)
         self.camera.set(3, self.width)
         self.camera.set(4, self.heigh)
 
+        # 加载人脸检测模型
         module = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
         if os.path.exists(module):
             self.faceCascade = cv2.CascadeClassifier(module)
@@ -54,9 +54,12 @@ class FaceRecognition:
 
         self.recognizer = cv2.face.LBPHFaceRecognizer_create()
 
+        # 加载已有人脸数据
         trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml')
         if os.path.exists(trainer):
             self.recognizer.read(trainer)
+
+        self.fps = 1000 // self.fps
 
         self.image = tk.Label(root,bg="black")
 
@@ -82,33 +85,30 @@ class FaceRecognition:
     
 
     # 录入人脸
-    # id       str  <- 录入人的ID
-    # finish   str -> 录入结束时调用，返还录入状态
-    # return   None
+    # id       str  录入人的ID
+    # return   None 为录入成功,否则返还错误信息
 
-    def inputFace(self, id, finish):
-        self.status = 1
-        # text.config(text='请面向摄像头开始采集人脸信息')
-        # playsound(sound2)
+    def inputFace(self, id):
+        self.status = -1
 
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face', id)
 
         if not os.path.exists(path):
             os.makedirs(path)
 
-        count = 30
+        count = 10
 
         while count > 0:
             
             image = cv2.flip(self.camera.read()[1], 1)
 
-            cv2.putText(image, 'count down:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
-
             self.update(image)
 
-            cv2.waitKey(20)
+            cv2.waitKey(self.fps)
         
             count -= 1
+
+        time = 0
 
         while count < 10:
 
@@ -116,16 +116,19 @@ class FaceRecognition:
 
             for (x, y, w, h) in faces:
                 cv2.imwrite(os.path.join(path, str(count) + ".jpg"), gray[y:y+h, x:x+w])
-
                 cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 count += 1
                 break
 
-            cv2.putText(image, 'record:' + str(count), (100, 100), self.font, 1, (0, 0, 0), 5)
-
             self.update(image)
 
-            cv2.waitKey(20)
+            cv2.waitKey(self.fps)
+
+            time += 1
+
+            if time > 100:
+                self.clear()
+                return '检测超时！'
 
         face = []
 
@@ -160,24 +163,27 @@ class FaceRecognition:
 
             self.clear()
 
-            finish('录入成功！')
+            return None # '录入成功！'
         else:
             self.clear()
 
-            finish('录入失败，请尝试重新录入！')
+            return '录入失败，请尝试重新录入！'
 
 
     # 实时检测人脸
-    # success  str -> 检测到的人
-    # return   None
+    # return   str 检测到的人的id,超时返还None
 
-    def detection(self, success, stop=lambda: nop()):
+    def detection(self):
         
-        self.status = 1
+        self.status = -1
+
+        time = 0
 
         lastId = 0
+        lastTime = 0
 
-        while True:
+        while time < 100:
+
             image, gray, faces = self.__face__()
 
             for(x, y, w, h) in faces:
@@ -187,26 +193,31 @@ class FaceRecognition:
 
                 if 0 < confidence < 45:
                     confidence = "{}%".format(round(100 - confidence))
-                    if lastId != uid:
-                        lastId = uid
+                    
+                    if lastId == uid:
+                        lastTime += 1
+                        if lastTime > 4:
+                            self.clear()
+                            return str(uid)
                     else:
-                        self.clear()
-                        success(str(uid))
-                        return
-                else:
-                    uid = "unknown"
-                    confidence = "{}%".format(round(100 - confidence))
+                        lastId = uid
+                        lastTime = 0
+                    
+                    cv2.putText(image, str(uid), (x + 5, y - 5), self.font, 1, (255, 255, 255), 2)
+                    cv2.putText(image, confidence, (x + 5, y + h - 5), self.font, 1, (255, 255, 0), 1)
 
-                cv2.putText(image, str(uid), (x + 5, y - 5), self.font, 1, (255, 255, 255), 2)
-                cv2.putText(image, str(confidence), (x + 5, y + h - 5), self.font, 1, (255, 255, 0), 1)
+                else:
+                    cv2.putText(image, "unknown", (x + 5, y - 5), self.font, 1, (255, 255, 255), 2)
 
             self.update(image)
 
-            k = cv2.waitKey(10) & 0xff
-            if k == 27:
-                break
+            cv2.waitKey(self.fps)
 
-        stop('终止')
+            time += 1
+
+        self.clear()
+
+        return None
 
 
     # 删除现有模型
@@ -229,17 +240,18 @@ class FaceRecognition:
 
     # 进入待机状态
     def clear(self):
-        self.status = 0
+        self.status = 1000
         self.image.after(1000,self.loop)
 
 
     # 主循环
     def loop(self):
-        if self.status == 0:
+        if self.status > 0:
             self.update(cv2.flip(self.camera.read()[1], 1))
-            self.image.after(50,self.loop)
-
-
-    def nop(self):
-        pass
-
+            self.image.after(self.fps,self.loop)
+            self.status -= 1
+        
+        if self.status == 0:
+            self.image.config(image=None)
+            self.image.image = None
+            self.image.update()

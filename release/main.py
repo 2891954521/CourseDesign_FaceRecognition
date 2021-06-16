@@ -8,28 +8,25 @@ from playsound import playsound
 def inputFace():
     text.config(text='请面向摄像头开始采集人脸信息')
     playsound(sound2)
-    discerner.inputFace(id.get(), inputFinish)
-
-
-def inputFinish(text):
-    text.config(text=text)
-    playsound(sound3)
+    s = discerner.inputFace(id.get())
+    if s is None:
+        playsound(sound3)
+    else:
+        text.config(text=s)
     root.update()
 
 
 def detection():
-    discerner.detection(success)
-
-
-def success(id):
-    text.config(text = id + ' 签到成功！')
-    playsound(sound1)
-    root.update()
+    uid = discerner.detection()
+    if uid is not None:
+        text.config(text = uid + ' 签到成功！')
+        playsound(sound1)
+        root.update()
 
 
 if __name__ == '__main__':
 
-    sound1 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check _success.mp3')
+    sound1 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check_success.mp3')
     sound2 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','start_enter.mp3')
     sound3 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','enter_success.mp3')
 
