@@ -1,3 +1,6 @@
+import time
+import os
+
 class System:
 
     '''
@@ -10,7 +13,7 @@ class System:
 
     #若重复刷脸
     def readname(self):
-        import os
+        
         filePath = 'C:/Users/LroSE/Desktop/Photos/照片.jpg'    #filePath为储存人脸数据的文件
         name = os.listdir(filePath)
         return name
