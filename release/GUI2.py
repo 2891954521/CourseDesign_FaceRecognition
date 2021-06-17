@@ -16,8 +16,8 @@ sound_input_success = os.path.join(os.path.dirname(os.path.abspath(__file__)),'s
 
 #加载配置
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'data.bin'),'rb') as fi :data = pickle.load(fi)
-
 print(data)
+#print(data)
     #页面设置
 main_page = tk.Tk() # 创建窗口
 main_page.title("考勤管理系统") # 设置窗口名称
@@ -153,7 +153,7 @@ def add_stu():
         data[input_id.get()]=[input_name.get(),False]
         inputFace(input_id.get())
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'data.bin'),'wb') as info_fi :pickle.dump(data,info_fi)
-        show_list()
+        update_list()
         tkinter.messagebox.showinfo('提示','录入完成')
     else:
         tkinter.messagebox.showerror('错误','错误，数据填写不完整')
@@ -164,7 +164,7 @@ def del_stu():
             del data[input_id.get()]
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'data.bin'),'wb') as info_fi :pickle.dump(data,info_fi)
             print(data)
-            show_list()
+            update_list()
         else :
             tkinter.messagebox.showerror('错误','用户不存在')
 
@@ -178,12 +178,10 @@ def inputFinish(text):
     playsound(sound_input_success)
     manage_page.update()
 
-def show_list():
-    stu_list=Frame(canvas,bg='pink') #把frame放在canvas里
-    stu_list.place(width = swidth*42/100, height = sheight*56/100)
+def update_list():
+    list_box.delete(0, END)
     for i in data :
-        if i != '888':
-            Label(stu_list,text='            '+i+'            '+'|'+'    '+data.get(i)[0]+'    ',font = ('', round((sheight/25-8)*3/4))).pack(anchor = W)
+        if i != '888':list_box.insert("end",'            '+i+' '*(21-len(i))+'|    '+data.get(i)[0])
 
 
 face_id = StringVar()
@@ -195,13 +193,17 @@ tk.Button(manage_page, text = '返回', command = manage_page.pack_forget, font 
 tk.Button(manage_page, text = '关闭', command = close, font = ('', round((sheight/30-8)*3/4))).place(x = swidth*95/100, y = 0, width = swidth*5/100)
 tk.Entry(manage_page,textvariable=face_id,font = ('', round((sheight/22-8)*3/4))).place(x = swidth*3/100, y = sheight*12.5/100, width = swidth*37/100, height = sheight*8/100)
 tk.Button(manage_page, text = '更新人脸数据', font = ('', round((sheight/25-8)*3/4)), command = lambda:inputFace(face_id.get())).place(x = swidth*37/100, y = sheight*12.5/100, width = swidth*13/100, height = sheight*8/100)
-tk.Label(manage_page, text = '               学号               |    姓名    ', font = ('', round((sheight/25-8)*3/4)), bg='white', fg = "black",anchor = W).place(x = swidth*53/100, y = sheight*12.5/100, width = swidth*44/100, height = sheight*8/100)
-canvas=Canvas(manage_page,height = sheight*56/100, width = swidth*44/100,scrollregion=(0,0,520,520)) #创建canvas
-canvas.place(x = swidth*53/100, y = sheight*19/100)
-vbar=Scrollbar(canvas,orient=VERTICAL) #竖直滚动条
-vbar.place(x = swidth*42/100, width = swidth*2/100, y = sheight*0/100, heigh = sheight*56/100)
-vbar.configure(command=canvas.yview)
-show_list()#显示信息
+tk.Label(manage_page, text = '               '+'学号'+'              '+'|    '+'姓名    ', font = ('', round((sheight/25-8)*3/4)),anchor = W).place(x = swidth*53/100, y = sheight*12.5/100, width = swidth*44/100, height = sheight*8/100)
+#
+list_box=Listbox(manage_page,font = ('', round((sheight/25-8)*3/4)))
+list_box.place(x = swidth*53/100, y = sheight*19/100, width = swidth*42/100,height = sheight*56/100)
+#竖直滚动条
+vbar=Scrollbar(manage_page)
+vbar.place(x = swidth*95/100, width = swidth*2/100, y = sheight*19/100, heigh = sheight*56/100)
+#绑定
+list_box.configure(yscrollcommand = vbar.set)
+vbar.configure(command=list_box.yview)
+
 tk.Label(manage_page, text = '学号', font = ('', round((sheight/22-8)*3/4))).place(x = swidth*53/100, width = swidth*5/100, y = sheight*75.5/100, height = sheight*6/100)
 tk.Entry(manage_page, textvariable=input_id, font = ('', round((sheight/22-8)*3/4))).place(x = swidth*58/100, width = swidth*22/100, y = sheight*75.5/100, height = sheight*6/100)
 tk.Label(manage_page,text = '姓名', font = ('', round((sheight/22-8)*3/4))).place(x = swidth*53/100, width = swidth*5/100, y = sheight*81.5/100, height = sheight*6/100)
@@ -209,7 +211,7 @@ tk.Entry(manage_page, textvariable=input_name, font = ('', round((sheight/22-8)*
 tk.Button(manage_page, text = '添加', command = add_stu, font = ('', round((sheight/25-8)*3/4))).place(x = swidth*77/100, y = sheight*75.5/100, width = swidth*10/100, height = sheight*12/100)
 tk.Button(manage_page, text = '删除', command = del_stu, font = ('', round((sheight/25-8)*3/4))).place(x = swidth*87/100, y = sheight*75.5/100, width = swidth*10/100, height = sheight*12/100)
 
-
+update_list()#显示信息
 
 
 
@@ -221,7 +223,8 @@ tk.Button(manage_page, text = '删除', command = del_stu, font = ('', round((sh
 
 #执行程序
 
-initialize()
+#initialize()
+
 try:
     discerner = FaceRecognition.FaceRecognition(main_page, x = swidth*3/100, y = sheight*7/32, w = swidth*15/32, h = sheight*21/32)
 except Exception as e:
