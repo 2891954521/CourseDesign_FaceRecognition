@@ -151,12 +151,17 @@ manage_page= Frame(main_page, height = sheight, width = swidth)
 def add_stu():
     if input_id.get()!='' and input_name.get()!='':
         data[input_id.get()]=[input_name.get(),False]
-        inputFace(input_id.get())
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'data.bin'),'wb') as info_fi :pickle.dump(data,info_fi)
-        update_list()
-        tkinter.messagebox.showinfo('提示','录入完成')
+        if inputFace(input_id.get())==None:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'data.bin'),'wb') as info_fi :pickle.dump(data,info_fi)
+            update_list()
+            entery_id.delete(0, END)
+            entery_name.delete(0, END)
+            tkinter.messagebox.showinfo('提示','录入成功！')
+        else:
+            tkinter.messagebox.showerror('错误','录入失败！')
     else:
-        tkinter.messagebox.showerror('错误','错误，数据填写不完整')
+        tkinter.messagebox.showerror('错误','错误，数据填写不完整！')
+        
 
 def del_stu(): 
     if input_id.get()!='' :
@@ -165,8 +170,10 @@ def del_stu():
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'data.bin'),'wb') as info_fi :pickle.dump(data,info_fi)
             print(data)
             update_list()
+            entery_id.delete(0, END)
+            tkinter.messagebox.showinfo('提示','删除成功！')
         else :
-            tkinter.messagebox.showerror('错误','用户不存在')
+            tkinter.messagebox.showerror('错误','用户不存在！')
 
 def inputFace(faceid):
     manage_title.config(text='请面向摄像头开始采集人脸信息')
@@ -205,9 +212,11 @@ list_box.configure(yscrollcommand = vbar.set)
 vbar.configure(command=list_box.yview)
 
 tk.Label(manage_page, text = '学号', font = ('', round((sheight/22-8)*3/4))).place(x = swidth*53/100, width = swidth*5/100, y = sheight*75.5/100, height = sheight*6/100)
-tk.Entry(manage_page, textvariable=input_id, font = ('', round((sheight/22-8)*3/4))).place(x = swidth*58/100, width = swidth*22/100, y = sheight*75.5/100, height = sheight*6/100)
+entery_id=tk.Entry(manage_page, textvariable=input_id, font = ('', round((sheight/22-8)*3/4)))
+entery_id.place(x = swidth*58/100, width = swidth*22/100, y = sheight*75.5/100, height = sheight*6/100)
 tk.Label(manage_page,text = '姓名', font = ('', round((sheight/22-8)*3/4))).place(x = swidth*53/100, width = swidth*5/100, y = sheight*81.5/100, height = sheight*6/100)
-tk.Entry(manage_page, textvariable=input_name, font = ('', round((sheight/22-8)*3/4))).place(x = swidth*58/100, width = swidth*22/100, y = sheight*81.5/100, height = sheight*6/100)
+entery_name=tk.Entry(manage_page, textvariable=input_name, font = ('', round((sheight/22-8)*3/4)))
+entery_name.place(x = swidth*58/100, width = swidth*22/100, y = sheight*81.5/100, height = sheight*6/100)
 tk.Button(manage_page, text = '添加', command = add_stu, font = ('', round((sheight/25-8)*3/4))).place(x = swidth*77/100, y = sheight*75.5/100, width = swidth*10/100, height = sheight*12/100)
 tk.Button(manage_page, text = '删除', command = del_stu, font = ('', round((sheight/25-8)*3/4))).place(x = swidth*87/100, y = sheight*75.5/100, width = swidth*10/100, height = sheight*12/100)
 
