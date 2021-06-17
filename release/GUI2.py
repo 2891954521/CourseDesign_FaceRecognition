@@ -149,9 +149,13 @@ tk.Button(check_page, text = '检测', command = detect).place(x = swidth*53/100
 manage_page= Frame(main_page, height = sheight, width = swidth) 
 
 def add_stu():
+
     if input_id.get()!='' and input_name.get()!='':
         data[input_id.get()]=[input_name.get(),False]
-        if inputFace(input_id.get())==None:
+        manage_title.config(text='请面向摄像头开始采集人脸信息')
+        playsound(sound_start_input)
+        
+        if discerner.inputFace(input_id.get())==None:
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'data.bin'),'wb') as info_fi :pickle.dump(data,info_fi)
             update_list()
             entery_id.delete(0, END)
@@ -161,7 +165,6 @@ def add_stu():
             tkinter.messagebox.showerror('错误','录入失败！')
     else:
         tkinter.messagebox.showerror('错误','错误，数据填写不完整！')
-        
 
 def del_stu(): 
     if input_id.get()!='' :
@@ -174,11 +177,6 @@ def del_stu():
             tkinter.messagebox.showinfo('提示','删除成功！')
         else :
             tkinter.messagebox.showerror('错误','用户不存在！')
-
-def inputFace(faceid):
-    manage_title.config(text='请面向摄像头开始采集人脸信息')
-    playsound(sound_start_input)
-    discerner.inputFace(faceid, inputFinish)
 
 def inputFinish(text):
     manage_title.config(text=text)
@@ -199,7 +197,7 @@ manage_title.place(x = 16, y = 0, width = swidth, height = sheight*12.5/100)
 tk.Button(manage_page, text = '返回', command = manage_page.pack_forget, font = ('', round((sheight/30-8)*3/4))).place(x = 0, y = 0, width = 75)
 tk.Button(manage_page, text = '关闭', command = close, font = ('', round((sheight/30-8)*3/4))).place(x = swidth*95/100, y = 0, width = swidth*5/100)
 tk.Entry(manage_page,textvariable=face_id,font = ('', round((sheight/22-8)*3/4))).place(x = swidth*3/100, y = sheight*12.5/100, width = swidth*37/100, height = sheight*8/100)
-tk.Button(manage_page, text = '更新人脸数据', font = ('', round((sheight/25-8)*3/4)), command = lambda:inputFace(face_id.get())).place(x = swidth*37/100, y = sheight*12.5/100, width = swidth*13/100, height = sheight*8/100)
+tk.Button(manage_page, text = '更新人脸数据', font = ('', round((sheight/25-8)*3/4))).place(x = swidth*37/100, y = sheight*12.5/100, width = swidth*13/100, height = sheight*8/100)
 tk.Label(manage_page, text = '               '+'学号'+'              '+'|    '+'姓名    ', font = ('', round((sheight/25-8)*3/4)),anchor = W).place(x = swidth*53/100, y = sheight*12.5/100, width = swidth*44/100, height = sheight*8/100)
 #
 list_box=Listbox(manage_page,font = ('', round((sheight/25-8)*3/4)))

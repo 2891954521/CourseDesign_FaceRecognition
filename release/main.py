@@ -13,7 +13,7 @@ def inputFace():
         playsound(sound3)
     else:
         text.config(text=s)
-    root.update()
+    #root.update()
 
 
 def detection():
