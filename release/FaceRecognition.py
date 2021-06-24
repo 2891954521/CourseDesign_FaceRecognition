@@ -1,5 +1,6 @@
 import os
 import cv2
+import System
 import numpy as np
 
 import tkinter as tk
@@ -17,8 +18,9 @@ class FaceRecognition:
     # 相机
     camera = None
 
+    system = None
     # 人脸检测
-    faceCascade =  None
+    faceCascade = None
 
     # 人脸分类
     recognizer = None
@@ -28,15 +30,20 @@ class FaceRecognition:
     # 缩放尺寸
     scaleFactor = 1.2
 
-    fps = 30
+    fps = 25
 
     font = cv2.FONT_HERSHEY_SIMPLEX
 
     # 初始化
-    def __init__(self,root,x=16,y=16,w=640,h=480):
+    def __init__(self,system, root, x, y, w, h):
+
+        self.system = system
 
         self.width = w
         self.heigh = h
+
+        # self.width = 480
+        # self.heigh = 320
 
         self.minW = int(0.2 * self.width)
         self.minH = int(0.2 * self.heigh)
@@ -46,7 +53,7 @@ class FaceRecognition:
         self.camera.set(4, self.heigh)
 
         # 加载人脸检测模型
-        module = os.path.join(os.path.dirname(os.path.abspath(__file__)),'haarcascade_frontalface_default.xml')
+        module = os.path.join(self.system.path, 'haarcascade_frontalface_default.xml')
         if os.path.exists(module):
             self.faceCascade = cv2.CascadeClassifier(module)
         else:
@@ -55,15 +62,15 @@ class FaceRecognition:
         self.recognizer = cv2.face.LBPHFaceRecognizer_create()
 
         # 加载已有人脸数据
-        trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml')
+        trainer = os.path.join(self.system.path, 'trainer.yml')
         if os.path.exists(trainer):
             self.recognizer.read(trainer)
 
         self.fps = 1000 // self.fps
 
-        self.image = tk.Label(root,bg="black")
+        self.image = tk.Label(root.page,bg="black")
 
-        self.image.place(x=x, y=y, width=w, height=h)
+        root.place_widget(self.image, x, y, w, h)
 
         self.image.after(1000,self.loop)
 
@@ -91,83 +98,92 @@ class FaceRecognition:
     def inputFace(self, id):
         self.status = -1
 
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face', id)
+        path = os.path.join(self.system.path, 'face', id)
 
-        if not os.path.exists(path):
-            os.makedirs(path)
+        if os.path.exists(path):
+            os.remove(path)
 
-        count = 10
+        os.makedirs(path)
+        
+        count = 20
 
         while count > 0:
-            
             image = cv2.flip(self.camera.read()[1], 1)
-
             self.update(image)
-
             cv2.waitKey(self.fps)
-        
             count -= 1
 
         time = 0
 
+        face = []
+        
         while count < 10:
 
             image, gray, faces = self.__face__()
 
             for (x, y, w, h) in faces:
-                cv2.imwrite(os.path.join(path, str(count) + ".jpg"), gray[y:y+h, x:x+w])
+                face.append(gray[y:y+h, x:x+w])
                 cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 count += 1
                 break
 
             self.update(image)
-
             cv2.waitKey(self.fps)
 
             time += 1
 
-            if time > 100:
+            if time > 200:
                 self.clear()
-                return '检测超时！'
+                return '录入超时'
 
-        face = []
+        time = 0
+        ct = [0 for i in range(len(face))]
 
-        for image in os.listdir(path):
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        recognizer.train(face, np.array([i for i in range(len(face))]))
 
-            img_numpy = np.array(Image.open(os.path.join(path, image)).convert('L'), 'uint8')
+        count = 20
 
-            dim = img_numpy.shape
+        while count > 0:
+            image, gray, faces = self.__face__()
 
-            faces = self.faceCascade.detectMultiScale(
-                img_numpy,
-                scaleFactor = self.scaleFactor - 0.1,
-                minNeighbors = self.minNeighbors,
-                minSize = (dim[1] // 2, dim[0] // 2)
-            )
+            for(x, y, w, h) in faces:
+                cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                c, confidence = recognizer.predict(gray[y:y+h, x:x+w])
 
-            if len(faces) != 0:
-                (x, y, w, h) = faces[0]
-                face.append(img_numpy[y:y+h, x:x+w]) 
+                if 0 < confidence < 50:
+                    ct[c] += 1
+                    count -= 1
 
-        if len(face) != 0:
+            self.update(image)
+            cv2.waitKey(self.fps)
 
-            trainer = os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml')
+            time += 1
 
-            if os.path.exists(trainer):
-                self.recognizer.update(face, np.array([int(id)] * len(face)))
-            else:
-                self.recognizer.train(face, np.array([int(id)] * len(face)))
+            if time > 200:
+                self.clear()
+                return '录入超时'
 
-            # recognizer.save() worked on Mac, but not on Pi
-            self.recognizer.write(trainer)
+        for i in range(len(face)-1,-1,-1):
+            if ct[i] < 2:
+                del face[i]
 
-            self.clear()
+        for i in range(len(face)):
+            cv2.imwrite(os.path.join(path, str(i) + ".jpg"), face[i])
 
-            return None # '录入成功！'
+        trainer = os.path.join(self.system.path,'trainer.yml')
+
+        if os.path.exists(trainer):
+            self.recognizer.update(face, np.array([int(id)] * len(face)))
         else:
-            self.clear()
+            self.recognizer.train(face, np.array([int(id)] * len(face)))
 
-            return '录入失败，请尝试重新录入！'
+        # recognizer.save() worked on Mac, but not on Pi
+        self.recognizer.write(trainer)
+
+        self.clear()
+
+        return None
 
 
     # 实时检测人脸
@@ -182,7 +198,7 @@ class FaceRecognition:
         lastId = 0
         lastTime = 0
 
-        while time < 100:
+        while time < 200:
 
             image, gray, faces = self.__face__()
 
@@ -191,12 +207,11 @@ class FaceRecognition:
 
                 uid, confidence = self.recognizer.predict(gray[y:y+h, x:x+w])
 
-                if 0 < confidence < 45:
-                    confidence = "{}%".format(round(100 - confidence))
+                if 0 < confidence < 50:
                     
                     if lastId == uid:
                         lastTime += 1
-                        if lastTime > 4:
+                        if lastTime > 2:
                             self.clear()
                             return str(uid)
                     else:
@@ -204,7 +219,7 @@ class FaceRecognition:
                         lastTime = 0
                     
                     cv2.putText(image, str(uid), (x + 5, y - 5), self.font, 1, (255, 255, 255), 2)
-                    cv2.putText(image, confidence, (x + 5, y + h - 5), self.font, 1, (255, 255, 0), 1)
+                    # cv2.putText(image, "{}%".format(round(100 - confidence)), (x + 5, y + h - 5), self.font, 1, (255, 255, 0), 1)
 
                 else:
                     cv2.putText(image, "unknown", (x + 5, y - 5), self.font, 1, (255, 255, 255), 2)
@@ -218,6 +233,43 @@ class FaceRecognition:
         self.clear()
 
         return None
+
+
+    # 重新生成模型
+    def createTrainer(self):
+        self.recognizer = cv2.face.LBPHFaceRecognizer_create()
+
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face')
+
+        for uid in os.listdir(path):
+            
+            face = []
+
+            p = os.path.join(path, uid)
+
+            for i in os.listdir(p):
+
+                img_numpy = np.array(Image.open(os.path.join(p, i)).convert('L'), 'uint8')
+
+                dim = img_numpy.shape
+
+                faces = self.faceCascade.detectMultiScale(
+                    img_numpy,
+                    scaleFactor = self.scaleFactor - 0.1,
+                    minNeighbors = self.minNeighbors,
+                    minSize = (dim[1] // 2, dim[0] // 2)
+                )
+
+                if len(faces) != 0:
+                    (x, y, w, h) = faces[0]
+                    face.append(img_numpy[y:y+h, x:x+w])
+
+            self.recognizer.update(face, np.array([int(uid)] * len(face)))
+
+        # recognizer.save() worked on Mac, but not on Pi
+        self.recognizer.write(os.path.join(os.path.dirname(os.path.abspath(__file__)),'trainer.yml'))
+
+        self.clear()
 
 
     # 删除现有模型
@@ -241,7 +293,7 @@ class FaceRecognition:
     # 进入待机状态
     def clear(self):
         self.status = 1000
-        self.image.after(1000,self.loop)
+        self.image.after(100,self.loop)
 
 
     # 主循环

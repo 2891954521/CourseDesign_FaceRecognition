@@ -1,66 +1,254 @@
-import os
-
-import FaceRecognition
+import time
 import tkinter as tk
-from playsound import playsound
+import tkinter.messagebox
+
+import _thread
+
+import System
+import FaceRecognition
+
+from tkinter import ttk
 
 
-def inputFace():
-    text.config(text='请面向摄像头开始采集人脸信息')
-    playsound(sound2)
-    s = discerner.inputFace(id.get())
-    if s is None:
-        playsound(sound3)
-    else:
-        text.config(text=s)
-    #root.update()
+
+class BasePage:
+
+    page = None
+
+    width = 640
+
+    height = 480
+
+    def __init__(self):
+        pass
+
+    def place_widget(self, widget, x, y, w = 0, h = 0):
+        if h == 0:
+            if w == 0:
+                widget.place(x = self.width*x/100, y = self.height*y/100)
+            else:
+                widget.place(x = self.width*x/100, y = self.height*y/100, width = self.width*w/100)
+        else:
+            widget.place(x = self.width*x/100, y = self.height*y/100, width = self.width*w/100, height = self.height*h/100)
+
+    def get_font(self, size):
+        return ('Arial', round((self.height*size/100-8)*3/4))
 
 
-def detection():
-    uid = discerner.detection()
-    if uid is not None:
-        text.config(text = uid + ' 签到成功！')
-        playsound(sound1)
-        root.update()
+class MainPage(BasePage):
+
+
+    def __init__(self):
+        self.page = tk.Tk()
+
+        self.page.title("考勤管理系统")
+        self.page.attributes("-fullscreen", True)
+
+        self.input_uid = tk.StringVar()
+        self.input_pwd = tk.StringVar()
+
+        self.page.update()
+
+        self.width = self.page.winfo_screenwidth()
+        self.height = self.page.winfo_screenheight()
+
+        self.place_widget(tk.Label(self.page, text = '考勤管理系统', font = self.get_font(10), fg = "black"), 0, 5, 100, 12.5)
+        
+        self.place_widget(tk.Button(self.page, text = '考勤', command = lambda:checkPage.page.pack(), font = self.get_font(3)), 0, 0, 5)
+        self.place_widget(tk.Button(self.page, text = '关闭', command = self.page.destroy, font = self.get_font(3)), 95, 0, 5)
+        
+        self.place_widget(tk.Label(self.page, text = '学号:', font = self.get_font(5)), 61, 45)
+        self.entery_uid = tk.Entry(self.page, textvariable = self.input_uid, font = self.get_font(5))
+        self.place_widget(self.entery_uid, 68, 45, 20)
+
+        self.place_widget(tk.Label(self.page, text = '密码:', font = self.get_font(5)), 61, 55)
+        self.entery_pwd = tk.Entry(self.page, textvariable = self.input_pwd, font = self.get_font(5), show = '*')
+        self.place_widget(self.entery_pwd, 68, 55, 20)
+
+        self.place_widget(tk.Button(self.page, text = '登录', command = self.login, font = self.get_font(4)), 65, 65, 6)
+        self.place_widget(tk.Button(self.page, text = '刷脸登录', command = self.check_face, font = self.get_font(4)), 75, 65, 10)
+    
+
+    def login(self):
+        status, msg = system.login(self.input_uid.get(), self.input_pwd.get())
+        if status == 0:
+            self.entery_uid.delete(0, tk.END)
+            self.entery_pwd.delete(0, tk.END)
+            manage_page.show()
+        else:
+            tkinter.messagebox.showerror('错误',msg)
+    
+
+    def check_face(self):
+        uid = discerner.detection()
+        if uid is not None and system.data[uid]['admin'] == 1:
+            manage_page.show()
+        else:
+            tkinter.messagebox.showerror('错误','您不是管理员')
+
+
+class ManagePage(BasePage):
+
+    def __init__(self):
+
+        self.page = tk.Frame(main.page, width = main.width, height = main.height)
+        self.width = main.width
+        self.height = main.height
+
+        self.input_id = tk.StringVar()
+        self.input_name = tk.StringVar()
+
+        self.place_widget(tk.Label(self.page, text = '信息编辑', font = self.get_font(5), fg = "black"), 18, 10)
+
+        self.place_widget(tk.Button(self.page, text = '返回', command = self.page.pack_forget, font = self.get_font(3)), 0, 0, 5)
+
+        self.place_widget(tk.Button(self.page, text = '关闭', command = main.page.destroy, font = self.get_font(3)), 95, 0, 5)
+
+        self.tree = ttk.Treeview(self.page, columns=["学号", "姓名"], show = 'headings')
+        self.tree.column("学号", width=100)
+        self.tree.column("姓名", width=100)
+        self.tree.heading("学号", text="学号")
+        self.tree.heading("姓名", text="姓名")
+        self.place_widget(self.tree, 53, 10, 42, 56)
+
+        # 竖直滚动条
+        vbar = tk.Scrollbar(self.page)
+        self.place_widget(vbar, 95, 10, 2, 56)
+        # 绑定事件
+        self.tree.configure(yscrollcommand = vbar.set)
+        vbar.configure(command = self.tree.yview)
+
+        self.place_widget(tk.Label(self.page, text = '学号', font = self.get_font(4)), 53, 75, 5, 6)
+
+        self.entery_id = tk.Entry(self.page, textvariable = self.input_id, font = self.get_font(4))
+        self.place_widget(self.entery_id, 58, 75, 22, 6)
+
+        self.place_widget(tk.Label(self.page,text = '姓名', font = self.get_font(4)), 53, 83, 5, 6)
+
+        self.entery_name = tk.Entry(self.page, textvariable = self.input_name, font = self.get_font(4))
+        self.place_widget(self.entery_name, 58, 83, 22, 6)
+
+        self.place_widget(tk.Button(self.page, text = '添加/更新', command = self.input_face, font = self.get_font(3)), 82, 76, 12, 12)
+        
+        self.update_list()
+        
+
+    def input_face(self):
+
+        uid = self.input_id.get()
+
+        if uid is None or uid == '':
+            tkinter.messagebox.showerror('错误','请填写学号！')
+            return
+
+        if system.data[uid] == None:
+
+            name = self.input_name.get()
+            if name is None or name == '':
+                tkinter.messagebox.showerror('错误','请填写姓名！')
+                return
+
+            msg = system.addUser()
+            if msg is None:
+                system.data[uid] = { 'name': name }
+            else:
+                tkinter.messagebox.showerror('错误',msg)
+                return
+
+        system.playSound('录入提示')
+        
+        msg  = discerner.inputFace(uid)
+        if msg  == None:
+            self.update_list()
+            self.entery_id.delete(0, tk.END)
+            self.entery_name.delete(0, tk.END)
+            system.playSound('录入成功')
+        else:
+            system.playSound('录入失败')
+            tkinter.messagebox.showerror('错误','录入失败！' + msg)
+            
+
+    def show(self):
+        self.update_list()
+        self.page.pack()
+
+
+    def update_list(self):
+        x = self.tree.get_children()
+        for item in x:
+            self.tree.delete(item)
+        postion = 0
+        for uid in system.data:
+            postion += 1
+            self.tree.insert("", postion, values=(uid, system.data[uid]["name"]))
+
+
+class CheckPage(BasePage):
+
+    def __init__(self):
+        
+        self.page = tk.Frame(main.page, width = main.width, height = main.height)
+        self.width = main.width
+        self.height = main.height
+
+        self.delay = 0
+
+        self.place_widget(tk.Label(self.page, text = 'Welcome', font = self.get_font(10), fg = "black"), 0, 5, 100, 12.5)
+
+        self.place_widget(tk.Button(self.page, text = '返回', command = self.page.pack_forget, font = self.get_font(3)), 0, 0, 5)
+        self.place_widget(tk.Button(self.page, text = '关闭', command = main.page.destroy, font = self.get_font(3)), 95, 0, 5)
+
+        self.text_time = tk.Label(self.page, text = '', font = self.get_font(10), fg = "black")
+        self.place_widget(self.text_time, 53, 25, 44, 50)
+
+        self.place_widget(tk.Button(self.page, text = '签到/签退', command = self.detect), 53, 75, 44, 12.5)
+
+        self.update_time()
+
+
+    def update_time(self):
+        if self.delay > 0:
+            self.delay -= 1
+        else:
+            self.text_time.config(text = time.strftime('%Y-%m-%d\n%H:%M:%S', time.localtime(time.time())))
+        self.text_time.after(1000, self.update_time)  
+
+
+    def detect(self):
+        uid = discerner.detection()
+
+        if uid == None:
+            self.delay = 3
+            self.text_time.config(text = '超时！')
+            return
+        
+        status, msg = system.signIn(uid)
+        self.delay = 3
+        if status == 0:
+            self.text_time.config(text = system.data[uid]['name'] + ',' + msg)
+        else:
+            print(msg)
+            self.text_time.config(text = msg)
+
+        self.page.update()
 
 
 if __name__ == '__main__':
 
-    sound1 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','check_success.mp3')
-    sound2 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','start_enter.mp3')
-    sound3 = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sound','enter_success.mp3')
+    discerner = None
+    
+    system = System.System()
 
-    root = tk.Tk()
+    main = MainPage()
 
-    root.geometry("800x480+0+0")
+    manage_page = ManagePage() 
 
-    root.attributes("-fullscreen", False)
+    checkPage = CheckPage()
 
-    root.update()
+    def init():
+        global discerner
+        discerner = FaceRecognition.FaceRecognition(system, main, 3, 22, 47, 65)
 
-    width = root.winfo_width()
-    heigh = root.winfo_height()
+    _thread.start_new_thread(init, ())
 
-    tk.Label(root,text='考勤系统',font=('Arial', 15),fg="black").place(x=16,y=0,width=width,height=64)
-
-    x = width // 3 * 2 + 16
-
-    id = tk.Entry(root, font=('Arial', 14))
-
-    wx = (width-x-16)//2
-    id.place(x=x, y=150, width=wx, height=50)
-
-    tk.Button(root,text='录入',command=inputFace).place(x=x+wx+16,y=150,width=width-x-wx-30,height=50)
-
-    tk.Button(root,text='检测',command=detection).place(x=x,y=210,width=width-x-16,height=50)
-
-    text = tk.Label(root,text='Welcome',font=('Arial', 15),fg="black")
-
-    text.place(x=x, y=72, width=width-x, height=64)
-
-    try:
-        discerner = FaceRecognition.FaceRecognition(root,x=16, y=72, w=x-32, h=int((x-32)/1.3))
-    except Exception as e:
-        text.config(text=e)
-
-    root.mainloop()
+    main.page.mainloop()
