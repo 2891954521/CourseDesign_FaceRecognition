@@ -1,9 +1,13 @@
 import re
 import os
 import json
+import pygame
 import requests
 
-from playsound import playsound
+import _thread
+
+import GUI
+import FaceRecognition
 
 
 class System:
@@ -16,7 +20,16 @@ class System:
 
     cookie = None
 
-    def __init__(self):
+    discerner = None
+    
+    main_page = None
+
+    check_page = None
+
+    manage_page = None
+
+    def __init__(self, cameraWidth=0, cameraHeight=0, threshold=45, fps=25):
+
         self.path = os.path.dirname(os.path.abspath(__file__))
 
         path = os.path.join(self.path,'data.json')
@@ -40,9 +53,28 @@ class System:
             '录入失败':   os.path.join(path, 'input _failed.mp3')
         }
 
+        pygame.mixer.init(frequency = 16000)
+
+        self.main_page = GUI.MainPage(self)   
+
+        self.manage_page = GUI.ManagePage(self, self.main_page) 
+
+        self.check_page = GUI.CheckPage(self, self.main_page)
+
+        def init():
+            width = self.main_page.width
+            height = self.main_page.height
+            self.discerner = FaceRecognition.FaceRecognition(self, self.main_page,
+                width*3//100, height*22//100, width*47//100, height*65//100, 
+                cameraWidth = cameraWidth, cameraHeight = cameraHeight,threshold = threshold, fps = fps)
+
+        _thread.start_new_thread(init, ())
+
+
 
     def playSound(self, msg):
-        playsound(self.sounds[msg], False)
+        pygame.mixer.music.load(self.sounds[msg])
+        pygame.mixer.music.play()
 
 
     def signIn(self, uid):
@@ -69,7 +101,6 @@ class System:
             return None
         else:
             return js['msg']
-
 
 
     def login(self, uid, password):
