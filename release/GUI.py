@@ -148,14 +148,14 @@ class ManagePage(BasePage):
             tkinter.messagebox.showerror('错误','请填写学号！')
             return
 
-        if self.system.data[uid] == None:
+        if uid not in self.system.data.keys():
 
             name = self.input_name.get()
             if name is None or name == '':
                 tkinter.messagebox.showerror('错误','请填写姓名！')
                 return
 
-            msg = self.system.addUser()
+            msg = self.system.addUser(uid,name)
             if msg is None:
                 self.system.data[uid] = { 'name': name }
             else:
