@@ -20,7 +20,7 @@ class FaceRecognition:
 
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    cameraUrl = 0 # 'https://192.168.5.196:4343/video'
+    cameraUrl = 0
 
 
     # 初始化
@@ -34,7 +34,7 @@ class FaceRecognition:
 
 
     # 获取人脸
-    def __face__(self, camera):
+    def __face__(self, camera) -> tuple:
 
         image = cv2.flip(camera.read()[1], 1)
 
@@ -56,7 +56,7 @@ class FaceRecognition:
     # finish   None -> 录入结束时调用
     # return   None
 
-    def inputFace(self, id, loop, finish):
+    def inputFace(self, id:str, loop, finish):
 
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'face', id)
 

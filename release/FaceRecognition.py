@@ -18,7 +18,7 @@ class FaceRecognition:
     # 相机
     camera = None
 
-    system = None
+    path = None
 
     # 人脸检测
     faceCascade = None
@@ -40,9 +40,9 @@ class FaceRecognition:
     font = cv2.FONT_HERSHEY_SIMPLEX
 
     # 初始化
-    def __init__(self,system, root, x, y, w, h, cameraWidth=0, cameraHeight=0, threshold=45, fps=25):
+    def __init__(self, path:str, root:tk.Tk, x:int, y:int, w:int, h:int, cameraWidth=0, cameraHeight=0, threshold=45, fps=25):
 
-        self.system = system
+        self.path = path
 
         if cameraWidth != 0 and cameraHeight != 0:
             self.width = cameraWidth
@@ -61,7 +61,7 @@ class FaceRecognition:
         self.camera.set(4, self.heigh)
 
         # 加载人脸检测模型
-        module = os.path.join(self.system.path, 'haarcascade_frontalface_default.xml')
+        module = os.path.join(self.path, 'haarcascade_frontalface_default.xml')
         if os.path.exists(module):
             self.faceCascade = cv2.CascadeClassifier(module)
         else:
@@ -70,7 +70,7 @@ class FaceRecognition:
         self.recognizer = cv2.face.LBPHFaceRecognizer_create()
 
         # 加载已有人脸数据
-        trainer = os.path.join(self.system.path, 'trainer.yml')
+        trainer = os.path.join(self.path, 'trainer.yml')
         if os.path.exists(trainer):
             self.recognizer.read(trainer)
 
@@ -109,7 +109,7 @@ class FaceRecognition:
 
         uid = str(uid)
 
-        path = os.path.join(self.system.path, 'face', uid)
+        path = os.path.join(self.path, 'face', uid)
 
         needReTrain = False
 
@@ -190,7 +190,7 @@ class FaceRecognition:
             self.createTrainer()
         else:
             self.recognizer.update(face, np.array([int(uid)] * len(face)))
-            self.recognizer.write(os.path.join(self.system.path,'trainer.yml'))
+            self.recognizer.write(os.path.join(self.path,'trainer.yml'))
 
         self.clear()
 
@@ -249,7 +249,7 @@ class FaceRecognition:
     def createTrainer(self):
         self.recognizer = cv2.face.LBPHFaceRecognizer_create()
 
-        path = os.path.join(self.system.path, 'face')
+        path = os.path.join(self.path, 'face')
 
         for uid in os.listdir(path):
             
@@ -277,14 +277,14 @@ class FaceRecognition:
             self.recognizer.update(face, np.array([int(uid)] * len(face)))
 
         # recognizer.save() worked on Mac, but not on Pi
-        self.recognizer.write(os.path.join(self.system.path,'trainer.yml'))
+        self.recognizer.write(os.path.join(self.path,'trainer.yml'))
 
         self.clear()
 
 
     # 删除现有模型
     def deleteTrainer(self) -> str:
-        trainer = os.path.join(self.system.path, 'trainer.yml')
+        trainer = os.path.join(self.path, 'trainer.yml')
         if os.path.exists(trainer):
             os.remove(trainer)
             return '已删除！'

@@ -64,7 +64,7 @@ class System:
         def init():
             width = self.main_page.width
             height = self.main_page.height
-            self.discerner = FaceRecognition.FaceRecognition(self, self.main_page,
+            self.discerner = FaceRecognition.FaceRecognition(self.path, self.main_page,
                 width*3//100, height*22//100, width*47//100, height*65//100, 
                 cameraWidth = cameraWidth, cameraHeight = cameraHeight,threshold = threshold, fps = fps)
 
@@ -78,74 +78,82 @@ class System:
 
 
     def signIn(self, uid):
-        js = requests.get('http://139.224.16.208:8081/api/signIn?uid=' + uid).json()
+        self.playSound('签到成功！')
+        return (0, '签到成功！')
 
-        if js['code'] == 200:
-            self.playSound(js['msg'])
-            return (0, js['msg'])
-        return (1, js['msg'])
+        # js = requests.get('http://139.224.16.208:8081/api/signIn?uid=' + uid).json()
+        # if js['code'] == 200:
+        #     self.playSound(js['msg'])
+        #     return (0, js['msg'])
+        # return (1, js['msg'])
 
 
     def addUser(self, uid, name):
-        js = requests.post(
-            url = 'http://139.224.16.208:8081/api/userRegister',
-            data = {
-                'name': name,
-                'uid': uid,
-                'password': 123456,
-                'conformPassword': 123456
-            }
-        ).json()
+        
+        return None
 
-        if js['code'] == 200:
-            return None
-        else:
-            return js['msg']
+        # js = requests.post(
+        #     url = 'http://139.224.16.208:8081/api/userRegister',
+        #     data = {
+        #         'name': name,
+        #         'uid': uid,
+        #         'password': 123456,
+        #         'conformPassword': 123456
+        #     }
+        # ).json()
+
+        # if js['code'] == 200:
+        #     return None
+        # else:
+        #     return js['msg']
 
 
     def login(self, uid, password):
-
-        response = requests.get('http://139.224.16.208:8081/index.jsp')
-        self.cookie = re.findall(r'JSESSIONID=(.*?);', response.headers['Set-Cookie'])[0]
-
-        js = requests.post(
-            url = 'http://139.224.16.208:8081/api/userLogin',
-            cookies = {
-                'JSESSIONID': self.cookie
-            },
-            data = {
-                'name': uid,
-                'password': password
-            }
-        ).json()
-
-        if js['code'] == 200:
-
-            path = os.path.join(self.path,'data.json')
-
-            js = requests.get(
-                url = 'http://139.224.16.208:8081/master/getUsers',
-                cookies = {
-                    'JSESSIONID': self.cookie
-                },
-            ).json()
-
-            if js['code'] == 200:
-
-                self.data = dict()
-
-                for user in js['data']['users']:
-                    self.data[str(user['uid'])] = user
-
-                with open(path,'w') as f:
-                    f.write(json.dumps(self.data))
-            else:
-                
-                self.data = []
-
-                print(js['msg'])
-
-            return (0, js['msg'])
+        if uid == 0 and password == '123456':
+            return (0, '登陆成功！')
         else:
-            self.cookie = None
-            return (1, js['msg'])
+            return (1, '登陆失败！')
+        # response = requests.get('http://139.224.16.208:8081/index.jsp')
+        # self.cookie = re.findall(r'JSESSIONID=(.*?);', response.headers['Set-Cookie'])[0]
+
+        # js = requests.post(
+        #     url = 'http://139.224.16.208:8081/api/userLogin',
+        #     cookies = {
+        #         'JSESSIONID': self.cookie
+        #     },
+        #     data = {
+        #         'name': uid,
+        #         'password': password
+        #     }
+        # ).json()
+
+        # if js['code'] == 200:
+
+        #     path = os.path.join(self.path,'data.json')
+
+        #     js = requests.get(
+        #         url = 'http://139.224.16.208:8081/master/getUsers',
+        #         cookies = {
+        #             'JSESSIONID': self.cookie
+        #         },
+        #     ).json()
+
+        #     if js['code'] == 200:
+
+        #         self.data = dict()
+
+        #         for user in js['data']['users']:
+        #             self.data[str(user['uid'])] = user
+
+        #         with open(path,'w') as f:
+        #             f.write(json.dumps(self.data))
+        #     else:
+                
+        #         self.data = []
+
+        #         print(js['msg'])
+
+        #     return (0, js['msg'])
+        # else:
+        #     self.cookie = None
+        #     return (1, js['msg'])
